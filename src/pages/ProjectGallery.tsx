@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +22,8 @@ const ProjectGallery = () => {
       description: "A mobile application that helps users track their carbon footprint and suggests eco-friendly alternatives.",
       technologies: ["React Native", "Node.js", "MongoDB", "Firebase"],
       candidates: ["Sarah Johnson", "Michael Chen", "Priya Patel", "James Wilson"],
-      category: "Mobile Development"
+      category: "Mobile Development",
+      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=240&fit=crop&crop=top"
     },
     {
       id: 2,
@@ -33,7 +33,8 @@ const ProjectGallery = () => {
       description: "A comprehensive financial dashboard for small businesses with AI-powered insights and predictions.",
       technologies: ["React", "Python", "PostgreSQL", "TensorFlow"],
       candidates: ["Emma Thompson", "David Rodriguez", "Aisha Okafor"],
-      category: "Web Development"
+      category: "Web Development",
+      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=240&fit=crop&crop=center"
     },
     {
       id: 3,
@@ -43,7 +44,8 @@ const ProjectGallery = () => {
       description: "A telemedicine platform connecting patients with healthcare providers in underserved areas.",
       technologies: ["Vue.js", "Express.js", "MySQL", "WebRTC"],
       candidates: ["Carlos Martinez", "Lisa Zhang", "Ahmed Hassan", "Rachel Cooper"],
-      category: "Healthcare Tech"
+      category: "Healthcare Tech",
+      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=240&fit=crop&crop=center"
     },
     {
       id: 4,
@@ -53,7 +55,8 @@ const ProjectGallery = () => {
       description: "An interactive e-learning platform with gamification elements for K-12 education.",
       technologies: ["Angular", "Java Spring", "Redis", "AWS"],
       candidates: ["Jennifer Lee", "Mark Thompson", "Nina Johansson"],
-      category: "EdTech"
+      category: "EdTech",
+      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=400&h=240&fit=crop&crop=center"
     }
   ];
 
@@ -150,18 +153,32 @@ const ProjectGallery = () => {
           {filteredProjects.map((project) => (
             <Card 
               key={project.id} 
-              className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-capaciti-purple cursor-pointer group"
+              className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-capaciti-purple cursor-pointer group overflow-hidden"
             >
               <Link to={`/project/${project.id}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className="bg-capaciti-purple/10 text-capaciti-purple">
-                      {project.cohort}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {project.category}
-                    </Badge>
-                  </div>
+                {/* Project Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={project.image} 
+                    alt={project.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute top-3 left-3 bg-capaciti-purple/90 text-white backdrop-blur-sm"
+                  >
+                    {project.cohort}
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-xs"
+                  >
+                    {project.category}
+                  </Badge>
+                </div>
+
+                <CardHeader className="pb-3">
                   <CardTitle className="text-xl text-capaciti-navy group-hover:text-capaciti-purple transition-colors">
                     {project.name}
                   </CardTitle>
