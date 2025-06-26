@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ const ProjectGallery = () => {
       id: 1,
       name: "EcoTracker Mobile App",
       groupName: "Green Warriors",
-      cohort: "Cohort 2024-1",
+      cohort: "Cloud Academy",
       description: "A mobile application that helps users track their carbon footprint and suggests eco-friendly alternatives.",
       technologies: ["React Native", "Node.js", "MongoDB", "Firebase"],
       candidates: ["Sarah Johnson", "Michael Chen", "Priya Patel", "James Wilson"],
@@ -29,7 +30,7 @@ const ProjectGallery = () => {
       id: 2,
       name: "SmartFinance Dashboard",
       groupName: "DataMinds",
-      cohort: "Cohort 2024-1",
+      cohort: "Cloud Academy",
       description: "A comprehensive financial dashboard for small businesses with AI-powered insights and predictions.",
       technologies: ["React", "Python", "PostgreSQL", "TensorFlow"],
       candidates: ["Emma Thompson", "David Rodriguez", "Aisha Okafor"],
@@ -40,7 +41,7 @@ const ProjectGallery = () => {
       id: 3,
       name: "HealthConnect Platform",
       groupName: "MedTech Innovators",
-      cohort: "Cohort 2024-2",
+      cohort: "Artificial Intelligence (AI)",
       description: "A telemedicine platform connecting patients with healthcare providers in underserved areas.",
       technologies: ["Vue.js", "Express.js", "MySQL", "WebRTC"],
       candidates: ["Carlos Martinez", "Lisa Zhang", "Ahmed Hassan", "Rachel Cooper"],
@@ -51,7 +52,7 @@ const ProjectGallery = () => {
       id: 4,
       name: "EduQuest Learning Platform",
       groupName: "Learning Labs",
-      cohort: "Cohort 2024-2",
+      cohort: "Artificial Intelligence (AI)",
       description: "An interactive e-learning platform with gamification elements for K-12 education.",
       technologies: ["Angular", "Java Spring", "Redis", "AWS"],
       candidates: ["Jennifer Lee", "Mark Thompson", "Nina Johansson"],
@@ -123,8 +124,8 @@ const ProjectGallery = () => {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">All Cohorts</SelectItem>
-                <SelectItem value="Cohort 2024-1">Cohort 2024-1</SelectItem>
-                <SelectItem value="Cohort 2024-2">Cohort 2024-2</SelectItem>
+                <SelectItem value="Cloud Academy">Cloud Academy</SelectItem>
+                <SelectItem value="Artificial Intelligence (AI)">Artificial Intelligence (AI)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={selectedSkill} onValueChange={setSelectedSkill}>
