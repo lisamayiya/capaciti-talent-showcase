@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,11 @@ import {
   CheckCircle, 
   Eye,
   Trash2,
-  Edit
+  Edit,
+  MessageCircle,
+  Clock,
+  User,
+  Building
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -51,10 +54,51 @@ const AdminDashboard = () => {
     }
   ];
 
+  // Mock interview requests data
+  const interviewRequests = [
+    {
+      id: 1,
+      candidateName: "Sarah Johnson",
+      clientCompany: "TechCorp Solutions",
+      clientContact: "john.doe@techcorp.com",
+      projectName: "EcoTracker Mobile App",
+      requestDate: "2024-01-15",
+      status: "pending",
+      message: "Impressed with Sarah's frontend development skills. Would like to discuss potential React Developer position."
+    },
+    {
+      id: 2,
+      candidateName: "Michael Chen",
+      clientCompany: "DataFlow Inc",
+      clientContact: "hiring@dataflow.com",
+      projectName: "SmartFinance Dashboard",
+      requestDate: "2024-01-14",
+      status: "pending",
+      message: "Michael's work on the dashboard backend is excellent. Interested in discussing backend engineer role."
+    },
+    {
+      id: 3,
+      candidateName: "Emma Williams",
+      clientCompany: "StartupX",
+      clientContact: "ceo@startupx.com",
+      projectName: "EcoTracker Mobile App",
+      requestDate: "2024-01-13",
+      status: "contacted",
+      message: "Emma's UI/UX contributions caught our attention. Would like to explore design opportunities."
+    }
+  ];
+
   const handleUploadProject = () => {
     toast({
       title: "Project Uploaded",
       description: "New project has been successfully uploaded and is now live in the gallery.",
+    });
+  };
+
+  const handleContactCandidate = (requestId: number) => {
+    toast({
+      title: "Candidate Contacted",
+      description: "The candidate has been notified about the interview request.",
     });
   };
 
@@ -93,7 +137,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white">
+          <TabsList className="grid w-full grid-cols-4 bg-white">
             <TabsTrigger value="overview" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Overview
             </TabsTrigger>
@@ -102,6 +146,9 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="upload" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Upload New
+            </TabsTrigger>
+            <TabsTrigger value="interviews" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
+              Interview Requests
             </TabsTrigger>
           </TabsList>
 
@@ -293,6 +340,76 @@ const AdminDashboard = () => {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Project
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Interview Requests Tab */}
+          <TabsContent value="interviews" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-capaciti-navy flex items-center">
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Interview Requests
+                </CardTitle>
+                <CardDescription>Manage client interview requests for candidates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {interviewRequests.map((request) => (
+                    <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <User className="h-4 w-4 text-capaciti-purple" />
+                            <h3 className="font-semibold text-capaciti-navy">{request.candidateName}</h3>
+                            <Badge variant={request.status === 'pending' ? 'secondary' : 'default'} 
+                                   className={request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                              {request.status === 'pending' ? 'Pending' : 'Contacted'}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <Building className="h-3 w-3" />
+                              <span>{request.clientCompany}</span>
+                              <span>•</span>
+                              <span>{request.clientContact}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <FolderOpen className="h-3 w-3" />
+                              <span>Project: {request.projectName}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="h-3 w-3" />
+                              <span>Requested: {new Date(request.requestDate).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 rounded p-3">
+                        <p className="text-sm text-gray-700">{request.message}</p>
+                      </div>
+                      <div className="flex space-x-2">
+                        {request.status === 'pending' && (
+                          <Button 
+                            size="sm" 
+                            className="bg-capaciti-purple hover:bg-capaciti-purple/90"
+                            onClick={() => handleContactCandidate(request.id)}
+                          >
+                            Contact Candidate
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Email Client
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
