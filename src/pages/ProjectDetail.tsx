@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -85,12 +84,11 @@ const ProjectDetail = () => {
                   Back to Projects
                 </Button>
               </Link>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-capaciti-purple rounded-full flex items-center justify-center">
-                  <span className="text-capaciti-white font-bold text-lg">C</span>
-                </div>
-                <span className="text-capaciti-navy font-bold text-xl">Capaciti</span>
-              </div>
+              <img 
+                src="/lovable-uploads/3a6c0701-3e05-4bae-a4a2-cfea7f370969.png" 
+                alt="Capaciti Logo" 
+                className="h-8 w-auto"
+              />
             </div>
           </div>
         </div>

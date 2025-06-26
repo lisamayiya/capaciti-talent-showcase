@@ -11,10 +11,11 @@ const Index = () => {
       <header className="container mx-auto px-6 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-capaciti-white rounded-full flex items-center justify-center">
-              <span className="text-capaciti-purple font-bold text-lg">C</span>
-            </div>
-            <span className="text-capaciti-white font-bold text-xl">Capaciti</span>
+            <img 
+              src="/lovable-uploads/3a6c0701-3e05-4bae-a4a2-cfea7f370969.png" 
+              alt="Capaciti Logo" 
+              className="h-8 w-auto"
+            />
           </div>
           <nav className="hidden md:flex space-x-6">
             <Link to="/projects" className="text-capaciti-white hover:text-gray-200 transition-colors">
