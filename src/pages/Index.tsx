@@ -1,40 +1,50 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState("");
+  const [searchProject, setSearchProject] = useState("");
   const [selectedCohort, setSelectedCohort] = useState("");
 
   const handleSearch = () => {
     // Navigate to projects page with filters
     const params = new URLSearchParams();
-    if (selectedProject) params.set('project', selectedProject);
+    if (searchProject) params.set('project', searchProject);
     if (selectedCohort) params.set('cohort', selectedCohort);
     
     window.location.href = `/projects?${params.toString()}`;
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background with geometric shapes */}
+      <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-white to-purple-50">
+        {/* Geometric shapes */}
+        <div className="absolute top-20 right-10 w-32 h-32 bg-gradient-to-br from-red-400 to-pink-400 rounded-3xl rotate-45 opacity-80"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl rotate-12 opacity-70"></div>
+        <div className="absolute bottom-32 left-20 w-28 h-28 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full opacity-60"></div>
+        <div className="absolute bottom-20 right-64 w-20 h-20 bg-gradient-to-br from-pink-400 to-red-400 transform rotate-45 opacity-70"></div>
+      </div>
+
       {/* Header */}
-      <header className="px-6 py-4 border-b">
+      <header className="relative z-10 px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-2">
             <img 
               src="/lovable-uploads/3a6c0701-3e05-4bae-a4a2-cfea7f370969.png" 
-              alt="Capaciti Logo" 
+              alt="CAPACITI Logo" 
               className="h-8 w-auto"
             />
           </div>
-          <nav className="flex space-x-6">
+          <nav className="flex items-center space-x-6">
             <Link to="/select-role" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Login
             </Link>
-            <Link to="/select-role" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            <Link to="/select-role" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
               Signup
             </Link>
           </nav>
@@ -42,71 +52,68 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-16">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
-          <div>
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
-              Discover Talent. Empower Innovation.
-            </h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-lg">
-              Connect to your one-stop centre for thousands of hiring decisions and technical jobs.
-            </p>
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
+                Discover Talent.<br />
+                Empower Innovation.
+              </h1>
+              <p className="text-lg text-gray-600 max-w-lg">
+                Glumos is your one-stop-centre for thousands of digital freelance and fulltime jobs.
+              </p>
+            </div>
 
             {/* Search Form */}
-            <div className="bg-white border rounded-lg p-6 shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reserve a project
-                  </label>
-                  <Select value={selectedProject} onValueChange={setSelectedProject}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All about programming" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="programming">All about programming</SelectItem>
-                      <SelectItem value="web-development">Web Development</SelectItem>
-                      <SelectItem value="mobile-apps">Mobile Apps</SelectItem>
-                      <SelectItem value="data-science">Data Science</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="Search a project"
+                      value={searchProject}
+                      onChange={(e) => setSearchProject(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <div className="relative">
+                    <Select value={selectedCohort} onValueChange={setSelectedCohort}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Cohort" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cloud-academy">Cloud Academy</SelectItem>
+                        <SelectItem value="artificial-intelligence">Artificial Intelligence</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cohort
-                  </label>
-                  <Select value={selectedCohort} onValueChange={setSelectedCohort}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select cohort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cloud-academy">Cloud Academy</SelectItem>
-                      <SelectItem value="artificial-intelligence">Artificial Intelligence (AI)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Button 
+                  onClick={handleSearch}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3"
+                  size="lg"
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  Search
+                </Button>
               </div>
-              
-              <Button 
-                onClick={handleSearch}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                size="lg"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Search
-              </Button>
             </div>
           </div>
 
-          {/* Right Content - Background Image */}
-          <div className="relative">
-            <img 
-              src="/lovable-uploads/bb9a3c09-aa71-476a-add0-ab1eb6cc5f16.png" 
-              alt="Hero Background" 
-              className="w-full h-96 object-cover rounded-3xl"
-            />
+          {/* Right Content - Hero Image */}
+          <div className="relative flex justify-center lg:justify-end">
+            <div className="relative">
+              <img 
+                src="/lovable-uploads/41626513-8243-4094-86dc-c6d792ff9f19.png" 
+                alt="Confident professional with laptop" 
+                className="w-full max-w-md h-auto object-contain"
+              />
+            </div>
           </div>
         </div>
       </main>
