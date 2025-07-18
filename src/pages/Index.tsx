@@ -1,15 +1,28 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowRight, Users, Briefcase, Award } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedCohort, setSelectedCohort] = useState("");
+
+  const handleSearch = () => {
+    // Navigate to projects page with filters
+    const params = new URLSearchParams();
+    if (selectedProject) params.set('project', selectedProject);
+    if (selectedCohort) params.set('cohort', selectedCohort);
+    
+    window.location.href = `/projects?${params.toString()}`;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-capaciti-purple via-capaciti-navy to-capaciti-red">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="container mx-auto px-6 py-8">
-        <div className="flex items-center justify-between">
+      <header className="px-6 py-4 border-b">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-2">
             <img 
               src="/lovable-uploads/3a6c0701-3e05-4bae-a4a2-cfea7f370969.png" 
@@ -17,90 +30,89 @@ const Index = () => {
               className="h-8 w-auto"
             />
           </div>
-          <nav className="hidden md:flex space-x-6">
-            <Link to="/projects" className="text-capaciti-white hover:text-gray-200 transition-colors">
-              Projects
+          <nav className="flex space-x-6">
+            <Link to="/select-role" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              Login
             </Link>
-            <Link to="/admin" className="text-capaciti-white hover:text-gray-200 transition-colors">
-              Admin
+            <Link to="/select-role" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+              Signup
             </Link>
           </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="container mx-auto px-6 py-16">
-        <div className="text-center mb-16 animate-fade-in">
-          <h1 className="text-5xl md:text-6xl font-bold text-capaciti-white mb-6">
-            Cohort Connect
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-3xl mx-auto">
-            Discover exceptional talent through collaborative projects. Connect with our 
-            talented candidates and see their innovative work in action.
-          </p>
-          <Link to="/projects">
-            <Button 
-              size="lg" 
-              className="bg-capaciti-white text-capaciti-purple hover:bg-gray-100 px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Browse Projects
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
-        </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-16">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left Content */}
+          <div>
+            <h1 className="text-5xl font-bold text-gray-900 mb-6">
+              Discover Talent. Empower Innovation.
+            </h1>
+            <p className="text-lg text-gray-600 mb-8 max-w-lg">
+              Connect to your one-stop centre for thousands of hiring decisions and technical jobs.
+            </p>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
-          <Card className="p-8 bg-capaciti-white/10 backdrop-blur-sm border-capaciti-white/20 hover:bg-capaciti-white/20 transition-all duration-300">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-capaciti-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-capaciti-white" />
+            {/* Search Form */}
+            <div className="bg-white border rounded-lg p-6 shadow-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reserve a project
+                  </label>
+                  <Select value={selectedProject} onValueChange={setSelectedProject}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All about programming" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="programming">All about programming</SelectItem>
+                      <SelectItem value="web-development">Web Development</SelectItem>
+                      <SelectItem value="mobile-apps">Mobile Apps</SelectItem>
+                      <SelectItem value="data-science">Data Science</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cohort
+                  </label>
+                  <Select value={selectedCohort} onValueChange={setSelectedCohort}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select cohort" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cloud-academy">Cloud Academy</SelectItem>
+                      <SelectItem value="artificial-intelligence">Artificial Intelligence (AI)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-capaciti-white mb-3">
-                Group Collaboration
-              </h3>
-              <p className="text-gray-200">
-                Explore projects created by talented teams working together to solve real-world challenges.
-              </p>
+              
+              <Button 
+                onClick={handleSearch}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Search
+              </Button>
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-8 bg-capaciti-white/10 backdrop-blur-sm border-capaciti-white/20 hover:bg-capaciti-white/20 transition-all duration-300">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-capaciti-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Briefcase className="h-8 w-8 text-capaciti-white" />
+          {/* Right Content - Image */}
+          <div className="relative">
+            <div className="bg-gradient-to-br from-red-400 via-purple-500 to-blue-600 rounded-3xl p-8 h-96 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="w-32 h-32 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-white/30 rounded-full"></div>
+                </div>
+                <p className="text-lg font-medium">Talented professionals ready to innovate</p>
               </div>
-              <h3 className="text-xl font-semibold text-capaciti-white mb-3">
-                Professional Projects
-              </h3>
-              <p className="text-gray-200">
-                View high-quality work that demonstrates technical skills and creative problem-solving abilities.
-              </p>
             </div>
-          </Card>
-
-          <Card className="p-8 bg-capaciti-white/10 backdrop-blur-sm border-capaciti-white/20 hover:bg-capaciti-white/20 transition-all duration-300">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-capaciti-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Award className="h-8 w-8 text-capaciti-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-capaciti-white mb-3">
-                Talent Development
-              </h3>
-              <p className="text-gray-200">
-                Connect with candidates who have proven their abilities through intensive training and mentorship.
-              </p>
-            </div>
-          </Card>
+          </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="container mx-auto px-6 py-8 text-center">
-        <p className="text-gray-300">
-          © 2024 Capaciti. Empowering talent through collaborative learning.
-        </p>
-      </footer>
     </div>
   );
 };
