@@ -100,16 +100,13 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right Content - Image */}
+          {/* Right Content - Background Image */}
           <div className="relative">
-            <div className="bg-gradient-to-br from-red-400 via-purple-500 to-blue-600 rounded-3xl p-8 h-96 flex items-center justify-center">
-              <div className="text-center text-white">
-                <div className="w-32 h-32 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <div className="w-20 h-20 bg-white/30 rounded-full"></div>
-                </div>
-                <p className="text-lg font-medium">Talented professionals ready to innovate</p>
-              </div>
-            </div>
+            <img 
+              src="/lovable-uploads/bb9a3c09-aa71-476a-add0-ab1eb6cc5f16.png" 
+              alt="Hero Background" 
+              className="w-full h-96 object-cover rounded-3xl"
+            />
           </div>
         </div>
       </main>

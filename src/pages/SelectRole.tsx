@@ -5,7 +5,7 @@ const SelectRole = () => {
   const navigate = useNavigate();
 
   const handleAdminClick = () => {
-    navigate("/admin");
+    navigate("/admin-login");
   };
 
   const handleClientClick = () => {
