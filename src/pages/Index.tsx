@@ -44,7 +44,7 @@ const Index = () => {
             <Link to="/select-role" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Login
             </Link>
-            <Link to="/select-role" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
+            <Link to="/signup" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
               Signup
             </Link>
           </nav>
@@ -53,15 +53,15 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left Content */}
-          <div className="space-y-8">
+        <div className="flex justify-center">
+          <div className="max-w-2xl w-full">
+            <div className="space-y-8 text-center">
             <div>
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
                 Discover Talent.<br />
                 Empower Innovation.
               </h1>
-              <p className="text-lg text-gray-600 max-w-lg">
+              <p className="text-lg text-gray-600 max-w-lg mx-auto">
                 Glumos is your one-stop-centre for thousands of digital freelance and fulltime jobs.
               </p>
             </div>
@@ -103,16 +103,6 @@ const Index = () => {
                 </Button>
               </div>
             </div>
-          </div>
-
-          {/* Right Content - Hero Image */}
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="relative">
-              <img 
-                src="/lovable-uploads/41626513-8243-4094-86dc-c6d792ff9f19.png" 
-                alt="Confident professional with laptop" 
-                className="w-full max-w-md h-auto object-contain"
-              />
             </div>
           </div>
         </div>
