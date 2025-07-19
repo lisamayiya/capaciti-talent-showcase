@@ -1,70 +1,45 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   ArrowLeft, 
-  Plus, 
-  Upload, 
   Users, 
   FolderOpen, 
   CheckCircle, 
   Eye,
   Trash2,
-  Edit,
   MessageCircle,
   Clock,
   User,
   Building,
   Mail,
-  Save,
-  FileText
+  FileText,
+  ThumbsUp,
+  ThumbsDown,
+  ExternalLink,
+  Github
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getInterviewRequests, updateInterviewRequestStatus, type InterviewRequest } from "@/lib/interview-requests";
 
-interface ProjectForm {
-  projectName: string;
-  groupName: string;
-  cohort: string;
-  category: string;
+interface CandidateSubmission {
+  id: string;
+  name: string;
+  role: string;
+  skills: string;
+  bio: string;
+  projectTitle: string;
+  projectDescription: string;
   technologies: string;
-  candidates: string;
-  description: string;
-  projectUrl: string;
-}
-
-interface Candidate {
-  id: string;
-  name: string;
-  role: string;
-  skills: string;
-  bio: string;
   photoUrl: string;
-  projectId: string;
-  createdAt: string;
-}
-
-interface CandidateForm {
-  name: string;
-  role: string;
-  skills: string;
-  bio: string;
-  photoUrl: string;
-  projectId: string;
-}
-
-interface Draft extends ProjectForm {
-  id: string;
-  createdAt: string;
+  githubLink: string;
+  liveDemoLink: string;
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
 }
 
 const AdminDashboard = () => {
@@ -72,145 +47,96 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [interviewRequests, setInterviewRequests] = useState<InterviewRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<InterviewRequest | null>(null);
-  const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [projectForm, setProjectForm] = useState<ProjectForm>({
-    projectName: "",
-    groupName: "",
-    cohort: "",
-    category: "",
-    technologies: "",
-    candidates: "",
-    description: "",
-    projectUrl: ""
-  });
-
-  // State for projects and editing
+  const [submissions, setSubmissions] = useState<CandidateSubmission[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<CandidateSubmission | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
-  const [isEditingProject, setIsEditingProject] = useState(false);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-
-  // State for candidates
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [candidateForm, setCandidateForm] = useState<CandidateForm>({
-    name: "",
-    role: "",
-    skills: "",
-    bio: "",
-    photoUrl: "",
-    projectId: ""
-  });
 
   // Get real data from storage
   const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
-  const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
   const stats = {
     totalProjects: savedProjects.length,
-    activeCandidates: savedCandidates.length,
-    completedCohorts: [...new Set(savedProjects.map((p: any) => p.cohort))].length
+    pendingSubmissions: submissions.filter(s => s.status === "pending").length,
+    approvedSubmissions: submissions.filter(s => s.status === "approved").length
   };
 
   const recentProjects = savedProjects.slice(-2);
 
-  // Load interview requests, drafts, candidates, and projects from storage
+  // Load interview requests, submissions, and projects from storage
   useEffect(() => {
     setInterviewRequests(getInterviewRequests());
-    const savedDrafts = JSON.parse(localStorage.getItem('project-drafts') || '[]');
-    setDrafts(savedDrafts);
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
     setProjects(savedProjects);
-    const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    setCandidates(savedCandidates);
+    
+    // Load all candidate submissions
+    const allSubmissions: CandidateSubmission[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('candidateSubmission')) {
+        try {
+          const submission = JSON.parse(localStorage.getItem(key) || '{}');
+          if (submission.id) {
+            allSubmissions.push(submission);
+          }
+        } catch (e) {
+          console.warn('Failed to parse submission:', key);
+        }
+      }
+    }
+    setSubmissions(allSubmissions);
   }, [activeTab]);
 
-  const handleUploadProject = () => {
-    if (!projectForm.projectName || !projectForm.groupName || !projectForm.cohort) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleApproveSubmission = (submissionId: string) => {
+    const submission = submissions.find(s => s.id === submissionId);
+    if (!submission) return;
 
-    // Save project (in real app, this would be an API call)
+    const updatedSubmission = { ...submission, status: "approved" as const };
+    localStorage.setItem(`candidateSubmission_${submissionId}`, JSON.stringify(updatedSubmission));
+    
+    // Also save to projects for client visibility
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
     const newProject = {
-      ...projectForm,
-      id: Date.now().toString(),
+      id: `project_${submissionId}`,
+      projectName: submission.projectTitle,
+      groupName: submission.name,
+      cohort: "Candidate Submission",
+      category: "Individual",
+      technologies: submission.technologies,
+      candidates: submission.name,
+      description: submission.projectDescription,
+      projectUrl: submission.liveDemoLink,
+      githubLink: submission.githubLink,
+      photoUrl: submission.photoUrl,
+      candidateData: submission,
       createdAt: new Date().toISOString()
     };
     savedProjects.push(newProject);
     localStorage.setItem('projects', JSON.stringify(savedProjects));
 
-    // Clear form
-    setProjectForm({
-      projectName: "",
-      groupName: "",
-      cohort: "",
-      category: "",
-      technologies: "",
-      candidates: "",
-      description: "",
-      projectUrl: ""
-    });
+    setSubmissions(prev => prev.map(s => 
+      s.id === submissionId ? updatedSubmission : s
+    ));
 
     toast({
-      title: "Project Uploaded",
-      description: "New project has been successfully uploaded and is now live in the gallery.",
+      title: "Submission Approved",
+      description: "The submission has been approved and is now visible to clients.",
     });
   };
 
-  const handleSaveAsDraft = () => {
-    const newDraft: Draft = {
-      ...projectForm,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    
-    const updatedDrafts = [...drafts, newDraft];
-    setDrafts(updatedDrafts);
-    localStorage.setItem('project-drafts', JSON.stringify(updatedDrafts));
+  const handleRejectSubmission = (submissionId: string) => {
+    const submission = submissions.find(s => s.id === submissionId);
+    if (!submission) return;
 
-    // Clear form
-    setProjectForm({
-      projectName: "",
-      groupName: "",
-      cohort: "",
-      category: "",
-      technologies: "",
-      candidates: "",
-      description: "",
-      projectUrl: ""
-    });
+    const updatedSubmission = { ...submission, status: "rejected" as const };
+    localStorage.setItem(`candidateSubmission_${submissionId}`, JSON.stringify(updatedSubmission));
+
+    setSubmissions(prev => prev.map(s => 
+      s.id === submissionId ? updatedSubmission : s
+    ));
 
     toast({
-      title: "Draft Saved",
-      description: "Project has been saved as draft.",
-    });
-  };
-
-  const handleLoadDraft = (draft: Draft) => {
-    setProjectForm({
-      projectName: draft.projectName,
-      groupName: draft.groupName,
-      cohort: draft.cohort,
-      category: draft.category,
-      technologies: draft.technologies,
-      candidates: draft.candidates,
-      description: draft.description,
-      projectUrl: draft.projectUrl
-    });
-    setActiveTab("upload");
-  };
-
-  const handleDeleteDraft = (draftId: string) => {
-    const updatedDrafts = drafts.filter(d => d.id !== draftId);
-    setDrafts(updatedDrafts);
-    localStorage.setItem('project-drafts', JSON.stringify(updatedDrafts));
-    
-    toast({
-      title: "Draft Deleted",
-      description: "Draft has been removed.",
+      title: "Submission Rejected",
+      description: "The submission has been rejected.",
+      variant: "destructive"
     });
   };
 
@@ -237,24 +163,7 @@ const AdminDashboard = () => {
   };
 
   const handleViewProject = (projectId: string) => {
-    // Navigate to project detail page or open in new tab
     window.open(`/project/${projectId}`, '_blank');
-  };
-
-  const handleEditProject = (project: any) => {
-    setProjectForm({
-      projectName: project.projectName,
-      groupName: project.groupName,
-      cohort: project.cohort,
-      category: project.category || "",
-      technologies: project.technologies || "",
-      candidates: project.candidates || "",
-      description: project.description || "",
-      projectUrl: project.projectUrl || ""
-    });
-    setEditingProjectId(project.id);
-    setIsEditingProject(true);
-    setActiveTab("upload");
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -265,101 +174,6 @@ const AdminDashboard = () => {
     toast({
       title: "Project Deleted",
       description: "Project has been removed from the gallery.",
-    });
-  };
-
-  const handleUpdateProject = () => {
-    if (!editingProjectId) return;
-    
-    const updatedProjects = projects.map(p => 
-      p.id === editingProjectId 
-        ? { ...p, ...projectForm, updatedAt: new Date().toISOString() }
-        : p
-    );
-    
-    setProjects(updatedProjects);
-    localStorage.setItem('projects', JSON.stringify(updatedProjects));
-    
-    // Clear form and editing state
-    setProjectForm({
-      projectName: "",
-      groupName: "",
-      cohort: "",
-      category: "",
-      technologies: "",
-      candidates: "",
-      description: "",
-      projectUrl: ""
-    });
-    setIsEditingProject(false);
-    setEditingProjectId(null);
-    
-    toast({
-      title: "Project Updated",
-      description: "Project has been successfully updated.",
-    });
-  };
-
-  const handleCancelEdit = () => {
-    setProjectForm({
-      projectName: "",
-      groupName: "",
-      cohort: "",
-      category: "",
-      technologies: "",
-      candidates: "",
-      description: "",
-      projectUrl: ""
-    });
-    setIsEditingProject(false);
-    setEditingProjectId(null);
-  };
-
-  // Candidate management functions
-  const handleAddCandidate = () => {
-    if (!candidateForm.name || !candidateForm.projectId) {
-      toast({
-        title: "Error",
-        description: "Please fill in candidate name and select a project.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newCandidate: Candidate = {
-      ...candidateForm,
-      id: `candidate-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedCandidates = [...candidates, newCandidate];
-    setCandidates(updatedCandidates);
-    localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-
-    // Clear form
-    setCandidateForm({
-      name: "",
-      role: "",
-      skills: "",
-      bio: "",
-      photoUrl: "",
-      projectId: ""
-    });
-
-    toast({
-      title: "Candidate Added",
-      description: "New candidate has been successfully added to the project.",
-    });
-  };
-
-  const handleDeleteCandidate = (candidateId: string) => {
-    const updatedCandidates = candidates.filter(c => c.id !== candidateId);
-    setCandidates(updatedCandidates);
-    localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-    
-    toast({
-      title: "Candidate Deleted",
-      description: "Candidate has been removed.",
     });
   };
 
@@ -394,25 +208,19 @@ const AdminDashboard = () => {
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-capaciti-navy mb-2">Admin Dashboard</h1>
-          <p className="text-lg text-gray-600">Manage projects, candidates, and platform content</p>
+          <p className="text-lg text-gray-600">Manage projects, review submissions, and handle client requests</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white">
+          <TabsList className="grid w-full grid-cols-4 bg-white">
             <TabsTrigger value="overview" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Overview
             </TabsTrigger>
             <TabsTrigger value="projects" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Projects
             </TabsTrigger>
-            <TabsTrigger value="candidates" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
-              Candidates
-            </TabsTrigger>
-            <TabsTrigger value="upload" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
-              Upload New
-            </TabsTrigger>
-            <TabsTrigger value="drafts" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
-              Drafts
+            <TabsTrigger value="submissions" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
+              Review Submissions
             </TabsTrigger>
             <TabsTrigger value="interviews" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Interview Requests
@@ -429,29 +237,29 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-capaciti-navy">{stats.totalProjects}</div>
-                  <p className="text-xs text-gray-600">Across all cohorts</p>
+                  <p className="text-xs text-gray-600">Live in gallery</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Candidates</CardTitle>
-                  <Users className="h-4 w-4 text-capaciti-purple" />
+                  <CardTitle className="text-sm font-medium">Pending Submissions</CardTitle>
+                  <Clock className="h-4 w-4 text-capaciti-purple" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-capaciti-navy">{stats.activeCandidates}</div>
-                  <p className="text-xs text-gray-600">Currently enrolled</p>
+                  <div className="text-2xl font-bold text-capaciti-navy">{stats.pendingSubmissions}</div>
+                  <p className="text-xs text-gray-600">Awaiting review</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed Cohorts</CardTitle>
+                  <CardTitle className="text-sm font-medium">Approved Submissions</CardTitle>
                   <CheckCircle className="h-4 w-4 text-capaciti-purple" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-capaciti-navy">{stats.completedCohorts}</div>
-                  <p className="text-xs text-gray-600">Successfully graduated</p>
+                  <div className="text-2xl font-bold text-capaciti-navy">{stats.approvedSubmissions}</div>
+                  <p className="text-xs text-gray-600">Currently visible</p>
                 </CardContent>
               </Card>
             </div>
@@ -531,14 +339,6 @@ const AdminDashboard = () => {
                           </Button>
                           <Button 
                             variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditProject(project)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="outline" 
                             size="sm" 
                             className="text-red-600 hover:text-red-700"
                             onClick={() => handleDeleteProject(project.id)}
@@ -555,345 +355,195 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Candidates Tab */}
-          <TabsContent value="candidates" className="space-y-6">
+          {/* Review Submissions Tab */}
+          <TabsContent value="submissions" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-capaciti-navy">Add New Candidate</CardTitle>
-                <CardDescription>Add candidate information to a project</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="candidateName">Name *</Label>
-                      <Input 
-                        id="candidateName" 
-                        placeholder="Enter candidate name" 
-                        value={candidateForm.name}
-                        onChange={(e) => setCandidateForm({...candidateForm, name: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="candidateRole">Role</Label>
-                      <Input 
-                        id="candidateRole" 
-                        placeholder="e.g., Frontend Developer, Data Analyst" 
-                        value={candidateForm.role}
-                        onChange={(e) => setCandidateForm({...candidateForm, role: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="candidateSkills">Skills</Label>
-                      <Input 
-                        id="candidateSkills" 
-                        placeholder="e.g., React, Python, SQL, Design" 
-                        value={candidateForm.skills}
-                        onChange={(e) => setCandidateForm({...candidateForm, skills: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="candidateProject">Project *</Label>
-                      <Select value={candidateForm.projectId} onValueChange={(value) => setCandidateForm({...candidateForm, projectId: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a project" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          {projects.map(project => (
-                            <SelectItem key={project.id} value={project.id}>
-                              {project.projectName} ({project.groupName})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="candidatePhoto">Photo URL</Label>
-                      <Input 
-                        id="candidatePhoto" 
-                        placeholder="https://example.com/photo.jpg" 
-                        type="url"
-                        value={candidateForm.photoUrl}
-                        onChange={(e) => setCandidateForm({...candidateForm, photoUrl: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="candidateBio">Short Bio</Label>
-                  <Textarea 
-                    id="candidateBio" 
-                    placeholder="Brief description about the candidate..."
-                    className="min-h-[100px]"
-                    value={candidateForm.bio}
-                    onChange={(e) => setCandidateForm({...candidateForm, bio: e.target.value})}
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <Button 
-                    className="bg-capaciti-purple hover:bg-capaciti-purple/90"
-                    onClick={handleAddCandidate}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Candidate
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-capaciti-navy">All Candidates</CardTitle>
-                <CardDescription>Manage candidate profiles</CardDescription>
+                <CardTitle className="text-capaciti-navy">Candidate Submissions</CardTitle>
+                <CardDescription>Review and approve candidate project submissions</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {candidates.length === 0 ? (
+                  {submissions.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No candidates added yet</p>
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No submissions yet</p>
                     </div>
                   ) : (
-                    candidates.map((candidate) => {
-                      const project = projects.find(p => p.id === candidate.projectId);
-                      return (
-                        <div key={candidate.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                              {candidate.photoUrl ? (
-                                <img 
-                                  src={candidate.photoUrl} 
-                                  alt={candidate.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <User className="h-6 w-6 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-medium text-capaciti-navy">{candidate.name}</h3>
-                              <p className="text-sm text-gray-600">{candidate.role || "No role specified"}</p>
-                              <p className="text-sm text-gray-500">
-                                Project: {project?.projectName || "Unknown"} • Added: {new Date(candidate.createdAt).toLocaleDateString()}
-                              </p>
-                              {candidate.skills && (
-                                <p className="text-xs text-gray-500">Skills: {candidate.skills}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDeleteCandidate(candidate.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Upload Tab */}
-          <TabsContent value="upload" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-capaciti-navy">
-                  {isEditingProject ? "Edit Project" : "Upload New Project"}
-                </CardTitle>
-                <CardDescription>
-                  {isEditingProject ? "Update project information" : "Add a new group project to the platform"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="projectName">Project Name *</Label>
-                      <Input 
-                        id="projectName" 
-                        placeholder="Enter project name" 
-                        value={projectForm.projectName}
-                        onChange={(e) => setProjectForm({...projectForm, projectName: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="groupName">Group Name *</Label>
-                      <Input 
-                        id="groupName" 
-                        placeholder="Enter group name" 
-                        value={projectForm.groupName}
-                        onChange={(e) => setProjectForm({...projectForm, groupName: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cohort">Cohort *</Label>
-                      <Select value={projectForm.cohort} onValueChange={(value) => setProjectForm({...projectForm, cohort: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select cohort" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="2024-1">Cohort 2024-1</SelectItem>
-                          <SelectItem value="2024-2">Cohort 2024-2</SelectItem>
-                          <SelectItem value="2024-3">Cohort 2024-3</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="category">Category</Label>
-                      <Select value={projectForm.category} onValueChange={(value) => setProjectForm({...projectForm, category: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="web">Web Development</SelectItem>
-                          <SelectItem value="mobile">Mobile Development</SelectItem>
-                          <SelectItem value="data">Data Science</SelectItem>
-                          <SelectItem value="ai">AI/ML</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="projectUrl">Project URL</Label>
-                      <Input 
-                        id="projectUrl" 
-                        placeholder="https://project-demo.com" 
-                        type="url"
-                        value={projectForm.projectUrl}
-                        onChange={(e) => setProjectForm({...projectForm, projectUrl: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="technologies">Technologies Used</Label>
-                      <Input 
-                        id="technologies" 
-                        placeholder="React, Node.js, MongoDB..." 
-                        value={projectForm.technologies}
-                        onChange={(e) => setProjectForm({...projectForm, technologies: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="candidates">Team Members</Label>
-                      <Textarea 
-                        id="candidates" 
-                        placeholder="Enter candidate names (one per line)"
-                        className="min-h-[100px]"
-                        value={projectForm.candidates}
-                        onChange={(e) => setProjectForm({...projectForm, candidates: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Project Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Provide a detailed description of the project..."
-                    className="min-h-[120px]"
-                    value={projectForm.description}
-                    onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex justify-end space-x-4">
-                  {isEditingProject && (
-                    <Button variant="outline" onClick={handleCancelEdit}>
-                      Cancel
-                    </Button>
-                  )}
-                  {!isEditingProject && (
-                    <Button variant="outline" onClick={handleSaveAsDraft}>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save as Draft
-                    </Button>
-                  )}
-                  <Button 
-                    className="bg-capaciti-purple hover:bg-capaciti-purple/90"
-                    onClick={isEditingProject ? handleUpdateProject : handleUploadProject}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {isEditingProject ? "Update Project" : "Upload Project"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Drafts Tab */}
-          <TabsContent value="drafts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-capaciti-navy flex items-center">
-                  <FileText className="h-5 w-5 mr-2" />
-                  Project Drafts
-                </CardTitle>
-                <CardDescription>Manage saved project drafts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {drafts.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No drafts saved yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {drafts.map((draft) => (
-                      <div key={draft.id} className="border rounded-lg p-4 space-y-3">
+                    submissions.map((submission) => (
+                      <div key={submission.id} className="border rounded-lg p-4 space-y-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-capaciti-navy">{draft.projectName || "Untitled Project"}</h3>
-                            <p className="text-sm text-gray-600">{draft.groupName} • {draft.cohort}</p>
-                            <p className="text-xs text-gray-500">Saved: {new Date(draft.createdAt).toLocaleDateString()}</p>
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-medium text-capaciti-navy">{submission.name}</h3>
+                              <Badge 
+                                variant={
+                                  submission.status === "approved" ? "default" : 
+                                  submission.status === "rejected" ? "destructive" : "secondary"
+                                }
+                                className={
+                                  submission.status === "approved" ? "bg-green-100 text-green-800" :
+                                  submission.status === "rejected" ? "bg-red-100 text-red-800" :
+                                  "bg-yellow-100 text-yellow-800"
+                                }
+                              >
+                                {submission.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                                {submission.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                                {submission.status === "rejected" && <ThumbsDown className="h-3 w-3 mr-1" />}
+                                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">{submission.role}</p>
+                            <p className="text-sm font-medium text-capaciti-navy mb-2">{submission.projectTitle}</p>
+                            <p className="text-sm text-gray-500">
+                              Technologies: {submission.technologies || "Not specified"}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
+                            </p>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleLoadDraft(draft)}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDeleteDraft(draft.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
+                          <div className="flex items-center space-x-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setSelectedSubmission(submission)}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View Details
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Submission Details</DialogTitle>
+                                  <DialogDescription>
+                                    Review candidate information and project details
+                                  </DialogDescription>
+                                </DialogHeader>
+                                {selectedSubmission && (
+                                  <div className="space-y-6">
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                      <div className="space-y-4">
+                                        <div>
+                                          <h4 className="font-medium text-capaciti-navy mb-2">Candidate Information</h4>
+                                          <div className="space-y-2">
+                                            <p><strong>Name:</strong> {selectedSubmission.name}</p>
+                                            <p><strong>Role:</strong> {selectedSubmission.role}</p>
+                                            <p><strong>Skills:</strong> {selectedSubmission.skills}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <h4 className="font-medium text-capaciti-navy mb-2">Bio</h4>
+                                          <p className="text-sm text-gray-600">{selectedSubmission.bio || "No bio provided"}</p>
+                                        </div>
+                                      </div>
+                                      <div className="space-y-4">
+                                        <div>
+                                          <h4 className="font-medium text-capaciti-navy mb-2">Project Information</h4>
+                                          <div className="space-y-2">
+                                            <p><strong>Title:</strong> {selectedSubmission.projectTitle}</p>
+                                            <p><strong>Technologies:</strong> {selectedSubmission.technologies}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <h4 className="font-medium text-capaciti-navy mb-2">Description</h4>
+                                          <p className="text-sm text-gray-600">{selectedSubmission.projectDescription || "No description provided"}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {selectedSubmission.photoUrl && (
+                                      <div>
+                                        <h4 className="font-medium text-capaciti-navy mb-2">Photo</h4>
+                                        <img 
+                                          src={selectedSubmission.photoUrl} 
+                                          alt={selectedSubmission.name}
+                                          className="w-32 h-32 rounded-lg object-cover"
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    <div className="flex flex-wrap gap-4">
+                                      {selectedSubmission.githubLink && (
+                                        <a 
+                                          href={selectedSubmission.githubLink} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="flex items-center text-blue-600 hover:text-blue-800"
+                                        >
+                                          <Github className="h-4 w-4 mr-1" />
+                                          GitHub Repository
+                                        </a>
+                                      )}
+                                      {selectedSubmission.liveDemoLink && (
+                                        <a 
+                                          href={selectedSubmission.liveDemoLink} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="flex items-center text-blue-600 hover:text-blue-800"
+                                        >
+                                          <ExternalLink className="h-4 w-4 mr-1" />
+                                          Live Demo
+                                        </a>
+                                      )}
+                                    </div>
+                                    
+                                    {selectedSubmission.status === "pending" && (
+                                      <div className="flex space-x-4 pt-4 border-t">
+                                        <Button 
+                                          className="bg-green-600 hover:bg-green-700 text-white"
+                                          onClick={() => {
+                                            handleApproveSubmission(selectedSubmission.id);
+                                            setSelectedSubmission(null);
+                                          }}
+                                        >
+                                          <ThumbsUp className="h-4 w-4 mr-2" />
+                                          Approve
+                                        </Button>
+                                        <Button 
+                                          variant="destructive"
+                                          onClick={() => {
+                                            handleRejectSubmission(selectedSubmission.id);
+                                            setSelectedSubmission(null);
+                                          }}
+                                        >
+                                          <ThumbsDown className="h-4 w-4 mr-2" />
+                                          Reject
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                            
+                            {submission.status === "pending" && (
+                              <>
+                                <Button 
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => handleApproveSubmission(submission.id)}
+                                >
+                                  <ThumbsUp className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleRejectSubmission(submission.id)}
+                                >
+                                  <ThumbsDown className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
-                        {draft.description && (
-                          <div className="bg-gray-50 rounded p-3">
-                            <p className="text-sm text-gray-700">{draft.description}</p>
-                          </div>
-                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -924,97 +574,45 @@ const AdminDashboard = () => {
                           </div>
                           <div className="text-sm text-gray-600 space-y-1">
                             <div className="flex items-center space-x-2">
-                              <Building className="h-3 w-3" />
+                              <Building className="h-4 w-4" />
                               <span>{request.companyName}</span>
-                              <span>•</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Mail className="h-4 w-4" />
                               <span>{request.clientEmail}</span>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <FolderOpen className="h-3 w-3" />
-                              <span>Project: {request.projectName || "Not specified"}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Clock className="h-3 w-3" />
-                              <span>Requested: {new Date(request.requestDate).toLocaleDateString()}</span>
+                              <User className="h-4 w-4" />
+                              <span>Phone: {request.phoneNumber}</span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="bg-gray-50 rounded p-3">
-                        <p className="text-sm text-gray-700">{request.message}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        {request.status === 'pending' && (
+                        <div className="flex space-x-2">
                           <Button 
-                            size="sm" 
-                            className="bg-capaciti-purple hover:bg-capaciti-purple/90"
-                            onClick={() => handleContactCandidate(request.id)}
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEmailClient(request)}
                           >
-                            Contact Candidate
+                            <Mail className="h-4 w-4 mr-1" />
+                            Email Client
                           </Button>
-                        )}
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Details
+                          {request.status === 'pending' && (
+                            <Button 
+                              size="sm"
+                              className="bg-capaciti-purple hover:bg-capaciti-purple/90"
+                              onClick={() => handleContactCandidate(request.id)}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-1" />
+                              Contact Candidate
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Interview Request Details</DialogTitle>
-                              <DialogDescription>
-                                Full details of the interview request from {request.companyName}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label className="text-sm font-medium">Candidate Name</Label>
-                                  <p className="text-sm text-gray-700">{request.candidateName}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Company</Label>
-                                  <p className="text-sm text-gray-700">{request.companyName}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Client Email</Label>
-                                  <p className="text-sm text-gray-700">{request.clientEmail}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Project</Label>
-                                  <p className="text-sm text-gray-700">{request.projectName || "Not specified"}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Request Date</Label>
-                                  <p className="text-sm text-gray-700">{new Date(request.requestDate).toLocaleDateString()}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">Status</Label>
-                                  <Badge variant={request.status === 'pending' ? 'secondary' : 'default'} 
-                                         className={request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
-                                    {request.status === 'pending' ? 'Pending' : 'Contacted'}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div>
-                                <Label className="text-sm font-medium">Message</Label>
-                                <div className="bg-gray-50 rounded-lg p-4 mt-2">
-                                  <p className="text-sm text-gray-700">{request.message}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEmailClient(request)}
-                        >
-                          <Mail className="h-4 w-4 mr-1" />
-                          Email Client
-                        </Button>
+                          )}
+                        </div>
                       </div>
+                      {request.message && (
+                        <div className="bg-gray-50 rounded p-3">
+                          <p className="text-sm text-gray-700">{request.message}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
