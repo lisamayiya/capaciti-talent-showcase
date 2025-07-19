@@ -12,6 +12,10 @@ const SelectRole = () => {
     navigate("/projects");
   };
 
+  const handleCandidateClick = () => {
+    navigate("/candidate-dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
       {/* Logo */}
@@ -36,10 +40,10 @@ const SelectRole = () => {
         </p>
 
         {/* Role Buttons */}
-        <div className="flex gap-8 justify-center">
+        <div className="flex gap-6 justify-center flex-wrap">
           <Button
             onClick={handleAdminClick}
-            className="bg-gray-900 hover:bg-gray-800 text-white px-12 py-6 text-xl font-semibold rounded-xl min-w-48 h-16"
+            className="bg-gray-900 hover:bg-gray-800 text-white px-10 py-6 text-xl font-semibold rounded-xl min-w-44 h-16"
           >
             Admin
           </Button>
@@ -47,9 +51,16 @@ const SelectRole = () => {
           <Button
             onClick={handleClientClick}
             variant="outline"
-            className="border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-900 px-12 py-6 text-xl font-semibold rounded-xl min-w-48 h-16"
+            className="border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-900 px-10 py-6 text-xl font-semibold rounded-xl min-w-44 h-16"
           >
             Client
+          </Button>
+
+          <Button
+            onClick={handleCandidateClick}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-10 py-6 text-xl font-semibold rounded-xl min-w-44 h-16"
+          >
+            Candidate
           </Button>
         </div>
       </div>
