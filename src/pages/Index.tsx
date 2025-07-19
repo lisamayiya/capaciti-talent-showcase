@@ -62,7 +62,7 @@ const Index = () => {
                 Empower Innovation.
               </h1>
               <p className="text-lg text-gray-600 max-w-lg mx-auto">
-                Glumos is your one-stop-centre for thousands of digital freelance and fulltime jobs.
+                CAPACITI online expo to discover upcoming technical talent
               </p>
             </div>
 
