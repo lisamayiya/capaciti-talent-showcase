@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { getInterviewRequests, updateInterviewRequestStatus, type InterviewRequest } from "@/lib/interview-requests";
+import { getInterviewRequests, updateInterviewRequestStatus, clearAllInterviewRequests, type InterviewRequest } from "@/lib/interview-requests";
 
 interface CandidateSubmission {
   id: string;
@@ -552,15 +552,39 @@ const AdminDashboard = () => {
           <TabsContent value="interviews" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-capaciti-navy flex items-center">
-                  <MessageCircle className="h-5 w-5 mr-2" />
-                  Interview Requests
+                <CardTitle className="text-capaciti-navy flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    Interview Requests
+                  </div>
+                  {interviewRequests.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        clearAllInterviewRequests();
+                        setInterviewRequests([]);
+                        toast({
+                          title: "Interview Requests Cleared",
+                          description: "All interview requests have been removed.",
+                        });
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
                 </CardTitle>
                 <CardDescription>Manage client interview requests for candidates</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {interviewRequests.map((request) => (
+                  {interviewRequests.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No interview requests yet</p>
+                    </div>
+                  ) : (
+                    interviewRequests.map((request) => (
                     <div key={request.id} className="border rounded-lg p-4 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -613,9 +637,10 @@ const AdminDashboard = () => {
                           <p className="text-sm text-gray-700">{request.message}</p>
                         </div>
                       )}
-                    </div>
-                  ))}
-                </div>
+                     </div>
+                   ))
+                   )}
+                 </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { User, Briefcase, Code, Globe, Github, CheckCircle, Clock } from "lucide-react";
+import { User, Briefcase, Code, Globe, Github, CheckCircle, Clock, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface CandidateSubmission {
   id: string;
@@ -103,6 +104,14 @@ const CandidateDashboard = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="mb-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Candidate Dashboard</h1>
           <p className="text-muted-foreground">
             Welcome! Submit your profile and project details for review and approval.

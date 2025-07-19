@@ -25,6 +25,12 @@ export const getInterviewRequests = (): InterviewRequest[] => {
   return JSON.parse(stored);
 };
 
+export const clearAllInterviewRequests = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+};
+
 export const addInterviewRequest = (request: Omit<InterviewRequest, 'id' | 'requestDate' | 'status'>): InterviewRequest => {
   const newRequest: InterviewRequest = {
     ...request,
