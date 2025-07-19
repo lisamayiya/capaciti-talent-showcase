@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,10 +7,12 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Mail, MapPin, Calendar, Code, User, ExternalLink } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { InterviewRequestForm } from "@/components/InterviewRequestForm";
 
 const CandidateProfile = () => {
   const { id } = useParams();
   const { toast } = useToast();
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Mock candidate data (in real app, this would be fetched based on ID)
   const candidate = {
@@ -54,10 +57,11 @@ const CandidateProfile = () => {
   };
 
   const handleInterviewRequest = () => {
-    toast({
-      title: "Interview Request Sent",
-      description: `Your interview request for ${candidate.name} has been forwarded to the Capaciti team. You will be contacted within 24 hours.`,
-    });
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
   };
 
   return (
@@ -255,6 +259,13 @@ const CandidateProfile = () => {
           </div>
         </div>
       </main>
+
+      <InterviewRequestForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        candidateName={candidate.name}
+        candidateId={candidate.id}
+      />
     </div>
   );
 };

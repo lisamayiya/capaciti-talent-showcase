@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,10 +6,13 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Users, Calendar, Code, ExternalLink, User } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { InterviewRequestForm } from "@/components/InterviewRequestForm";
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
+  const [selectedCandidate, setSelectedCandidate] = useState<{name: string, id: number} | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Mock project data (in real app, this would be fetched based on ID)
   const project = {
@@ -64,11 +68,14 @@ const ProjectDetail = () => {
     githubUrl: "#"
   };
 
-  const handleInterviewRequest = (candidateName: string) => {
-    toast({
-      title: "Interview Request Sent",
-      description: `Your interview request for ${candidateName} has been forwarded to the Capaciti team. You will be contacted within 24 hours.`,
-    });
+  const handleInterviewRequest = (candidateName: string, candidateId: number) => {
+    setSelectedCandidate({ name: candidateName, id: candidateId });
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedCandidate(null);
   };
 
   return (
@@ -233,7 +240,7 @@ const ProjectDetail = () => {
                         <Button 
                           size="sm" 
                           className="w-full bg-capaciti-red hover:bg-capaciti-red/90 text-white"
-                          onClick={() => handleInterviewRequest(candidate.name)}
+                          onClick={() => handleInterviewRequest(candidate.name, candidate.id)}
                         >
                           Request Interview
                         </Button>
@@ -247,6 +254,15 @@ const ProjectDetail = () => {
           </div>
         </div>
       </main>
+
+      {selectedCandidate && (
+        <InterviewRequestForm
+          isOpen={isFormOpen}
+          onClose={handleCloseForm}
+          candidateName={selectedCandidate.name}
+          candidateId={selectedCandidate.id}
+        />
+      )}
     </div>
   );
 };
