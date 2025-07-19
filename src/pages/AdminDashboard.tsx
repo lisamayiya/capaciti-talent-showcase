@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { getInterviewRequests, updateInterviewRequestStatus, type InterviewRequest } from "@/lib/interview-requests";
 
 const AdminDashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [interviewRequests, setInterviewRequests] = useState<InterviewRequest[]>([]);
 
   // Mock data
   const stats = {
@@ -54,39 +56,10 @@ const AdminDashboard = () => {
     }
   ];
 
-  // Mock interview requests data
-  const interviewRequests = [
-    {
-      id: 1,
-      candidateName: "Sarah Johnson",
-      clientCompany: "TechCorp Solutions",
-      clientContact: "john.doe@techcorp.com",
-      projectName: "EcoTracker Mobile App",
-      requestDate: "2024-01-15",
-      status: "pending",
-      message: "Impressed with Sarah's frontend development skills. Would like to discuss potential React Developer position."
-    },
-    {
-      id: 2,
-      candidateName: "Michael Chen",
-      clientCompany: "DataFlow Inc",
-      clientContact: "hiring@dataflow.com",
-      projectName: "SmartFinance Dashboard",
-      requestDate: "2024-01-14",
-      status: "pending",
-      message: "Michael's work on the dashboard backend is excellent. Interested in discussing backend engineer role."
-    },
-    {
-      id: 3,
-      candidateName: "Emma Williams",
-      clientCompany: "StartupX",
-      clientContact: "ceo@startupx.com",
-      projectName: "EcoTracker Mobile App",
-      requestDate: "2024-01-13",
-      status: "contacted",
-      message: "Emma's UI/UX contributions caught our attention. Would like to explore design opportunities."
-    }
-  ];
+  // Load interview requests from storage
+  useEffect(() => {
+    setInterviewRequests(getInterviewRequests());
+  }, [activeTab]); // Refresh when switching to interviews tab
 
   const handleUploadProject = () => {
     toast({
@@ -95,7 +68,9 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleContactCandidate = (requestId: number) => {
+  const handleContactCandidate = (requestId: string) => {
+    updateInterviewRequestStatus(requestId, 'contacted');
+    setInterviewRequests(getInterviewRequests());
     toast({
       title: "Candidate Contacted",
       description: "The candidate has been notified about the interview request.",
@@ -372,13 +347,13 @@ const AdminDashboard = () => {
                           <div className="text-sm text-gray-600 space-y-1">
                             <div className="flex items-center space-x-2">
                               <Building className="h-3 w-3" />
-                              <span>{request.clientCompany}</span>
+                              <span>{request.companyName}</span>
                               <span>•</span>
-                              <span>{request.clientContact}</span>
+                              <span>{request.clientEmail}</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <FolderOpen className="h-3 w-3" />
-                              <span>Project: {request.projectName}</span>
+                              <span>Project: {request.projectName || "Not specified"}</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Clock className="h-3 w-3" />

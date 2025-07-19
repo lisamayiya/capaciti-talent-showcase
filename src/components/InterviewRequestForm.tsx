@@ -60,12 +60,18 @@ export const InterviewRequestForm = ({
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In a real app, this would send data to admin dashboard
-    console.log("Interview request submitted:", {
-      ...data,
+    // Import the function here to avoid build issues
+    const { addInterviewRequest } = await import("@/lib/interview-requests");
+    
+    // Add the request to storage so it appears in admin dashboard
+    addInterviewRequest({
       candidateName,
       candidateId,
-      timestamp: new Date().toISOString(),
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      companyName: data.companyName,
+      phoneNumber: data.phoneNumber,
+      message: data.message,
     });
 
     toast({
