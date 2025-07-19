@@ -13,7 +13,7 @@ const SelectRole = () => {
   };
 
   const handleCandidateClick = () => {
-    navigate("/candidate-dashboard");
+    navigate("/candidate-login");
   };
 
   return (

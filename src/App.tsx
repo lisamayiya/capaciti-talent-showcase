@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import SelectRole from "./pages/SelectRole";
 import SignUp from "./pages/SignUp";
 import AdminLogin from "./pages/AdminLogin";
+import CandidateLogin from "./pages/CandidateLogin";
 import ProjectGallery from "./pages/ProjectGallery";
 import ProjectDetail from "./pages/ProjectDetail";
 import CandidateProfile from "./pages/CandidateProfile";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/select-role" element={<SelectRole />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/candidate-login" element={<CandidateLogin />} />
           <Route path="/projects" element={<ProjectGallery />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/candidate/:id" element={<CandidateProfile />} />
