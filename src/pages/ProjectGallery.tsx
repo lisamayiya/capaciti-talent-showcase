@@ -58,11 +58,6 @@ const ProjectGallery = () => {
                 className="h-8 w-auto"
               />
             </div>
-            <Link to="/admin">
-              <Button variant="outline" className="border-capaciti-purple text-capaciti-purple hover:bg-capaciti-purple hover:text-white">
-                Admin Dashboard
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
