@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,60 +13,62 @@ const ProjectDetail = () => {
   const { toast } = useToast();
   const [selectedCandidate, setSelectedCandidate] = useState<{name: string, id: number} | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [project, setProject] = useState<any>(null);
 
-  // Mock project data (in real app, this would be fetched based on ID)
-  const project = {
-    id: 1,
-    name: "EcoTracker Mobile App",
-    groupName: "Green Warriors",
-    cohort: "Cohort 2024-1",
-    startDate: "March 2024",
-    duration: "8 weeks",
-    description: "EcoTracker is a comprehensive mobile application designed to help users monitor and reduce their carbon footprint. The app features an intuitive interface that tracks daily activities, calculates environmental impact, and provides personalized recommendations for sustainable living. Users can set goals, track progress, and connect with a community of environmentally conscious individuals.",
-    detailedDescription: "The application addresses the growing need for personal environmental accountability by making carbon footprint tracking accessible and engaging. Our team implemented advanced algorithms to calculate emissions from various activities including transportation, energy consumption, and lifestyle choices. The app also features a social component where users can share achievements and participate in environmental challenges.",
-    technologies: ["React Native", "Node.js", "MongoDB", "Firebase", "Google Maps API", "Chart.js"],
-    features: [
-      "Real-time carbon footprint calculation",
-      "Activity tracking and categorization",
-      "Personalized sustainability recommendations",
-      "Social features and community challenges",
-      "Data visualization and progress tracking",
-      "Integration with fitness and transportation apps"
-    ],
-    candidates: [
-      {
-        id: 1,
-        name: "Sarah Johnson",
-        role: "Full-Stack Developer",
-        bio: "Passionate about environmental technology and sustainable solutions.",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-      },
-      {
-        id: 2,
-        name: "Michael Chen",
-        role: "Mobile Developer",
-        bio: "Specialized in React Native with a focus on user experience design.",
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-      },
-      {
-        id: 3,
-        name: "Priya Patel",
-        role: "Backend Developer",
-        bio: "Expert in Node.js and database optimization for mobile applications.",
-        image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-      },
-      {
-        id: 4,
-        name: "James Wilson",
-        role: "UI/UX Designer",
-        bio: "Creating intuitive and accessible designs for environmental awareness.",
-        image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-      }
-    ],
-    category: "Mobile Development",
-    demoUrl: "#",
-    githubUrl: "#"
-  };
+  // Load project data from localStorage based on ID
+  useEffect(() => {
+    const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    const foundProject = savedProjects.find((p: any) => p.id === id);
+    
+    if (foundProject) {
+      // Transform the stored project data to match the expected format
+      const transformedProject = {
+        id: foundProject.id,
+        name: foundProject.projectName,
+        groupName: foundProject.groupName,
+        cohort: foundProject.cohort,
+        startDate: new Date(foundProject.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        duration: "8 weeks", // Default duration
+        description: foundProject.description || "No description available.",
+        detailedDescription: foundProject.description || "No detailed description available.",
+        technologies: foundProject.technologies ? foundProject.technologies.split(',').map((t: string) => t.trim()) : [],
+        features: [
+          "Project developed during bootcamp",
+          "Collaborative team development",
+          "Modern technology implementation",
+          "Industry-standard practices"
+        ],
+        candidates: foundProject.candidates ? foundProject.candidates.split('\n').filter((c: string) => c.trim()).map((name: string, index: number) => ({
+          id: index + 1,
+          name: name.trim(),
+          role: "Developer",
+          bio: "Passionate developer working on innovative solutions.",
+          image: `https://images.unsplash.com/photo-${1494790108755 + index}?w=150&h=150&fit=crop&crop=face`
+        })) : [],
+        category: foundProject.category || "Development",
+        demoUrl: foundProject.projectUrl || "#",
+        githubUrl: "#"
+      };
+      setProject(transformedProject);
+    }
+  }, [id]);
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Project Not Found</h2>
+          <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
+          <Link to="/projects">
+            <Button>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Projects
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleInterviewRequest = (candidateName: string, candidateId: number) => {
     setSelectedCandidate({ name: candidateName, id: candidateId });
@@ -126,10 +128,19 @@ const ProjectDetail = () => {
             </div>
             <div className="lg:ml-8 mt-6 lg:mt-0">
               <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-                <Button className="bg-capaciti-purple hover:bg-capaciti-purple/90">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View Demo
-                </Button>
+                {project.demoUrl && project.demoUrl !== "#" ? (
+                  <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="bg-capaciti-purple hover:bg-capaciti-purple/90 w-full">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Demo
+                    </Button>
+                  </a>
+                ) : (
+                  <Button disabled className="bg-gray-400 w-full">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Demo Not Available
+                  </Button>
+                )}
                 <Button variant="outline" className="border-capaciti-navy text-capaciti-navy hover:bg-capaciti-navy hover:text-white">
                   <Code className="h-4 w-4 mr-2" />
                   Source Code

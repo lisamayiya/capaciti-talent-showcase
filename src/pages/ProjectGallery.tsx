@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,61 +12,29 @@ const ProjectGallery = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCohort, setSelectedCohort] = useState("all");
   const [selectedSkill, setSelectedSkill] = useState("all");
+  const [projects, setProjects] = useState<any[]>([]);
 
-  // Mock project data
-  const projects = [
-    {
-      id: 1,
-      name: "EcoTracker Mobile App",
-      groupName: "Green Warriors",
-      cohort: "Cloud Academy",
-      description: "A mobile application that helps users track their carbon footprint and suggests eco-friendly alternatives.",
-      technologies: ["React Native", "Node.js", "MongoDB", "Firebase"],
-      candidates: ["Sarah Johnson", "Michael Chen", "Priya Patel", "James Wilson"],
-      category: "Mobile Development",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=240&fit=crop&crop=top"
-    },
-    {
-      id: 2,
-      name: "SmartFinance Dashboard",
-      groupName: "DataMinds",
-      cohort: "Cloud Academy",
-      description: "A comprehensive financial dashboard for small businesses with AI-powered insights and predictions.",
-      technologies: ["React", "Python", "PostgreSQL", "TensorFlow"],
-      candidates: ["Emma Thompson", "David Rodriguez", "Aisha Okafor"],
-      category: "Web Development",
-      image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=240&fit=crop&crop=center"
-    },
-    {
-      id: 3,
-      name: "HealthConnect Platform",
-      groupName: "MedTech Innovators",
-      cohort: "Artificial Intelligence (AI)",
-      description: "A telemedicine platform connecting patients with healthcare providers in underserved areas.",
-      technologies: ["Vue.js", "Express.js", "MySQL", "WebRTC"],
-      candidates: ["Carlos Martinez", "Lisa Zhang", "Ahmed Hassan", "Rachel Cooper"],
-      category: "Healthcare Tech",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=240&fit=crop&crop=center"
-    },
-    {
-      id: 4,
-      name: "EduQuest Learning Platform",
-      groupName: "Learning Labs",
-      cohort: "Artificial Intelligence (AI)",
-      description: "An interactive e-learning platform with gamification elements for K-12 education.",
-      technologies: ["Angular", "Java Spring", "Redis", "AWS"],
-      candidates: ["Jennifer Lee", "Mark Thompson", "Nina Johansson"],
-      category: "EdTech",
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=400&h=240&fit=crop&crop=center"
-    }
-  ];
+  // Load projects from localStorage
+  useEffect(() => {
+    const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    setProjects(savedProjects);
+  }, []);
+
+  // Get unique cohorts and technologies from actual projects
+  const uniqueCohorts = [...new Set(projects.map(p => p.cohort))];
+  const uniqueTechnologies = [...new Set(projects.flatMap(p => 
+    p.technologies ? p.technologies.split(',').map((t: string) => t.trim()) : []
+  ))];
 
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.candidates.some(candidate => candidate.toLowerCase().includes(searchTerm.toLowerCase()));
+    const projectTechnologies = project.technologies ? project.technologies.split(',').map((t: string) => t.trim()) : [];
+    const projectCandidates = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()) : [];
+    
+    const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         projectCandidates.some((candidate: string) => candidate.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCohort = selectedCohort === "all" || project.cohort === selectedCohort;
-    const matchesSkill = selectedSkill === "all" || project.technologies.includes(selectedSkill);
+    const matchesSkill = selectedSkill === "all" || projectTechnologies.includes(selectedSkill);
     
     return matchesSearch && matchesCohort && matchesSkill;
   });
@@ -124,8 +92,9 @@ const ProjectGallery = () => {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">All Cohorts</SelectItem>
-                <SelectItem value="Cloud Academy">Cloud Academy</SelectItem>
-                <SelectItem value="Artificial Intelligence (AI)">Artificial Intelligence (AI)</SelectItem>
+                {uniqueCohorts.map(cohort => (
+                  <SelectItem key={cohort} value={cohort}>{cohort}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={selectedSkill} onValueChange={setSelectedSkill}>
@@ -134,12 +103,9 @@ const ProjectGallery = () => {
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="all">All Technologies</SelectItem>
-                <SelectItem value="React">React</SelectItem>
-                <SelectItem value="React Native">React Native</SelectItem>
-                <SelectItem value="Vue.js">Vue.js</SelectItem>
-                <SelectItem value="Angular">Angular</SelectItem>
-                <SelectItem value="Node.js">Node.js</SelectItem>
-                <SelectItem value="Python">Python</SelectItem>
+                {uniqueTechnologies.map(tech => (
+                  <SelectItem key={tech} value={tech}>{tech}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="text-sm text-gray-500 flex items-center">
@@ -150,86 +116,107 @@ const ProjectGallery = () => {
 
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Card 
-              key={project.id} 
-              className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-capaciti-purple cursor-pointer group overflow-hidden"
-            >
-              <Link to={`/project/${project.id}`}>
-                {/* Project Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={project.image} 
-                    alt={project.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute top-3 left-3 bg-capaciti-purple/90 text-white backdrop-blur-sm"
-                  >
-                    {project.cohort}
-                  </Badge>
-                  <Badge 
-                    variant="outline" 
-                    className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-xs"
-                  >
-                    {project.category}
-                  </Badge>
-                </div>
-
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl text-capaciti-navy group-hover:text-capaciti-purple transition-colors">
-                    {project.name}
-                  </CardTitle>
-                  <CardDescription className="text-capaciti-red font-medium">
-                    Group: {project.groupName}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4 line-clamp-3">
-                    {project.description}
-                  </p>
-                  
-                  <div className="flex items-center mb-3">
-                    <Users className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-600">
-                      {project.candidates.length} team member{project.candidates.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.technologies.slice(0, 3).map((tech) => (
-                      <Badge key={tech} variant="outline" className="text-xs">
-                        {tech}
+          {filteredProjects.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="h-12 w-12 mx-auto mb-4" />
+                <p className="text-lg">No projects found</p>
+                <p className="text-sm">No projects have been uploaded yet or none match your criteria</p>
+              </div>
+            </div>
+          ) : (
+            filteredProjects.map((project) => {
+              const projectTechnologies = project.technologies ? project.technologies.split(',').map((t: string) => t.trim()) : [];
+              const projectCandidates = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()) : [];
+              const defaultImage = "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=240&fit=crop&crop=top";
+              
+              return (
+                <Card 
+                  key={project.id} 
+                  className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-capaciti-purple cursor-pointer group overflow-hidden"
+                >
+                  <Link to={`/project/${project.id}`}>
+                    {/* Project Image */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img 
+                        src={defaultImage} 
+                        alt={project.projectName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                      <Badge 
+                        variant="secondary" 
+                        className="absolute top-3 left-3 bg-capaciti-purple/90 text-white backdrop-blur-sm"
+                      >
+                        {project.cohort}
                       </Badge>
-                    ))}
-                    {project.technologies.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{project.technologies.length - 3} more
+                      <Badge 
+                        variant="outline" 
+                        className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-xs"
+                      >
+                        {project.category || "General"}
                       </Badge>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="text-sm text-gray-500">
-                    Team: {project.candidates.slice(0, 2).join(", ")}
-                    {project.candidates.length > 2 && ` +${project.candidates.length - 2} more`}
-                  </div>
-                </CardContent>
-              </Link>
-            </Card>
-          ))}
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl text-capaciti-navy group-hover:text-capaciti-purple transition-colors">
+                        {project.projectName}
+                      </CardTitle>
+                      <CardDescription className="text-capaciti-red font-medium">
+                        Group: {project.groupName}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600 mb-4 line-clamp-3">
+                        {project.description || "No description available."}
+                      </p>
+                      
+                      <div className="flex items-center mb-3">
+                        <Users className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="text-sm text-gray-600">
+                          {projectCandidates.length} team member{projectCandidates.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {projectTechnologies.slice(0, 3).map((tech) => (
+                          <Badge key={tech} variant="outline" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                        {projectTechnologies.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{projectTechnologies.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="text-sm text-gray-500">
+                        Team: {projectCandidates.slice(0, 2).join(", ")}
+                        {projectCandidates.length > 2 && ` +${projectCandidates.length - 2} more`}
+                      </div>
+                      
+                      {project.projectUrl && (
+                        <div className="mt-2">
+                          <a 
+                            href={project.projectUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View Live Demo
+                          </a>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Link>
+                </Card>
+              );
+            })
+          )}
         </div>
 
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg">No projects found matching your criteria</p>
-              <p className="text-sm">Try adjusting your search terms or filters</p>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
