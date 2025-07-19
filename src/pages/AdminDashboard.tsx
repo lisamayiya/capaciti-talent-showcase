@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   ArrowLeft, 
   Plus, 
@@ -21,16 +22,47 @@ import {
   MessageCircle,
   Clock,
   User,
-  Building
+  Building,
+  Mail,
+  Save,
+  FileText
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getInterviewRequests, updateInterviewRequestStatus, type InterviewRequest } from "@/lib/interview-requests";
 
+interface ProjectForm {
+  projectName: string;
+  groupName: string;
+  cohort: string;
+  category: string;
+  technologies: string;
+  candidates: string;
+  description: string;
+  projectUrl: string;
+}
+
+interface Draft extends ProjectForm {
+  id: string;
+  createdAt: string;
+}
+
 const AdminDashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [interviewRequests, setInterviewRequests] = useState<InterviewRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<InterviewRequest | null>(null);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [projectForm, setProjectForm] = useState<ProjectForm>({
+    projectName: "",
+    groupName: "",
+    cohort: "",
+    category: "",
+    technologies: "",
+    candidates: "",
+    description: "",
+    projectUrl: ""
+  });
 
   // Mock data
   const stats = {
@@ -56,15 +88,102 @@ const AdminDashboard = () => {
     }
   ];
 
-  // Load interview requests from storage
+  // Load interview requests and drafts from storage
   useEffect(() => {
     setInterviewRequests(getInterviewRequests());
-  }, [activeTab]); // Refresh when switching to interviews tab
+    const savedDrafts = JSON.parse(localStorage.getItem('project-drafts') || '[]');
+    setDrafts(savedDrafts);
+  }, [activeTab]);
 
   const handleUploadProject = () => {
+    if (!projectForm.projectName || !projectForm.groupName || !projectForm.cohort) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Save project (in real app, this would be an API call)
+    const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    const newProject = {
+      ...projectForm,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    savedProjects.push(newProject);
+    localStorage.setItem('projects', JSON.stringify(savedProjects));
+
+    // Clear form
+    setProjectForm({
+      projectName: "",
+      groupName: "",
+      cohort: "",
+      category: "",
+      technologies: "",
+      candidates: "",
+      description: "",
+      projectUrl: ""
+    });
+
     toast({
       title: "Project Uploaded",
       description: "New project has been successfully uploaded and is now live in the gallery.",
+    });
+  };
+
+  const handleSaveAsDraft = () => {
+    const newDraft: Draft = {
+      ...projectForm,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    const updatedDrafts = [...drafts, newDraft];
+    setDrafts(updatedDrafts);
+    localStorage.setItem('project-drafts', JSON.stringify(updatedDrafts));
+
+    // Clear form
+    setProjectForm({
+      projectName: "",
+      groupName: "",
+      cohort: "",
+      category: "",
+      technologies: "",
+      candidates: "",
+      description: "",
+      projectUrl: ""
+    });
+
+    toast({
+      title: "Draft Saved",
+      description: "Project has been saved as draft.",
+    });
+  };
+
+  const handleLoadDraft = (draft: Draft) => {
+    setProjectForm({
+      projectName: draft.projectName,
+      groupName: draft.groupName,
+      cohort: draft.cohort,
+      category: draft.category,
+      technologies: draft.technologies,
+      candidates: draft.candidates,
+      description: draft.description,
+      projectUrl: draft.projectUrl
+    });
+    setActiveTab("upload");
+  };
+
+  const handleDeleteDraft = (draftId: string) => {
+    const updatedDrafts = drafts.filter(d => d.id !== draftId);
+    setDrafts(updatedDrafts);
+    localStorage.setItem('project-drafts', JSON.stringify(updatedDrafts));
+    
+    toast({
+      title: "Draft Deleted",
+      description: "Draft has been removed.",
     });
   };
 
@@ -74,6 +193,19 @@ const AdminDashboard = () => {
     toast({
       title: "Candidate Contacted",
       description: "The candidate has been notified about the interview request.",
+    });
+  };
+
+  const handleEmailClient = (request: InterviewRequest) => {
+    const subject = `Re: Interview Request for ${request.candidateName}`;
+    const body = `Dear ${request.companyName} team,\n\nThank you for your interest in ${request.candidateName}. We have received your interview request and will coordinate with the candidate.\n\nBest regards,\nCapaciti Team`;
+    
+    const mailtoLink = `mailto:${request.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
+    
+    toast({
+      title: "Email Client Opened",
+      description: "Email client opened with pre-filled message.",
     });
   };
 
@@ -112,7 +244,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white">
+          <TabsList className="grid w-full grid-cols-5 bg-white">
             <TabsTrigger value="overview" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Overview
             </TabsTrigger>
@@ -121,6 +253,9 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="upload" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Upload New
+            </TabsTrigger>
+            <TabsTrigger value="drafts" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
+              Drafts
             </TabsTrigger>
             <TabsTrigger value="interviews" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Interview Requests
@@ -241,16 +376,26 @@ const AdminDashboard = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="projectName">Project Name</Label>
-                      <Input id="projectName" placeholder="Enter project name" />
+                      <Label htmlFor="projectName">Project Name *</Label>
+                      <Input 
+                        id="projectName" 
+                        placeholder="Enter project name" 
+                        value={projectForm.projectName}
+                        onChange={(e) => setProjectForm({...projectForm, projectName: e.target.value})}
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="groupName">Group Name</Label>
-                      <Input id="groupName" placeholder="Enter group name" />
+                      <Label htmlFor="groupName">Group Name *</Label>
+                      <Input 
+                        id="groupName" 
+                        placeholder="Enter group name" 
+                        value={projectForm.groupName}
+                        onChange={(e) => setProjectForm({...projectForm, groupName: e.target.value})}
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="cohort">Cohort</Label>
-                      <Select>
+                      <Label htmlFor="cohort">Cohort *</Label>
+                      <Select value={projectForm.cohort} onValueChange={(value) => setProjectForm({...projectForm, cohort: value})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select cohort" />
                         </SelectTrigger>
@@ -263,7 +408,7 @@ const AdminDashboard = () => {
                     </div>
                     <div>
                       <Label htmlFor="category">Category</Label>
-                      <Select>
+                      <Select value={projectForm.category} onValueChange={(value) => setProjectForm({...projectForm, category: value})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -279,8 +424,23 @@ const AdminDashboard = () => {
                   
                   <div className="space-y-4">
                     <div>
+                      <Label htmlFor="projectUrl">Project URL</Label>
+                      <Input 
+                        id="projectUrl" 
+                        placeholder="https://project-demo.com" 
+                        type="url"
+                        value={projectForm.projectUrl}
+                        onChange={(e) => setProjectForm({...projectForm, projectUrl: e.target.value})}
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="technologies">Technologies Used</Label>
-                      <Input id="technologies" placeholder="React, Node.js, MongoDB..." />
+                      <Input 
+                        id="technologies" 
+                        placeholder="React, Node.js, MongoDB..." 
+                        value={projectForm.technologies}
+                        onChange={(e) => setProjectForm({...projectForm, technologies: e.target.value})}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="candidates">Team Members</Label>
@@ -288,6 +448,8 @@ const AdminDashboard = () => {
                         id="candidates" 
                         placeholder="Enter candidate names (one per line)"
                         className="min-h-[100px]"
+                        value={projectForm.candidates}
+                        onChange={(e) => setProjectForm({...projectForm, candidates: e.target.value})}
                       />
                     </div>
                   </div>
@@ -299,13 +461,16 @@ const AdminDashboard = () => {
                     id="description" 
                     placeholder="Provide a detailed description of the project..."
                     className="min-h-[120px]"
+                    value={projectForm.description}
+                    onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
                   />
                 </div>
 
                 <Separator />
 
                 <div className="flex justify-end space-x-4">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleSaveAsDraft}>
+                    <Save className="h-4 w-4 mr-2" />
                     Save as Draft
                   </Button>
                   <Button 
@@ -316,6 +481,65 @@ const AdminDashboard = () => {
                     Upload Project
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Drafts Tab */}
+          <TabsContent value="drafts" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-capaciti-navy flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Project Drafts
+                </CardTitle>
+                <CardDescription>Manage saved project drafts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {drafts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No drafts saved yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {drafts.map((draft) => (
+                      <div key={draft.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-capaciti-navy">{draft.projectName || "Untitled Project"}</h3>
+                            <p className="text-sm text-gray-600">{draft.groupName} • {draft.cohort}</p>
+                            <p className="text-xs text-gray-500">Saved: {new Date(draft.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleLoadDraft(draft)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteDraft(draft.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        {draft.description && (
+                          <div className="bg-gray-50 rounded p-3">
+                            <p className="text-sm text-gray-700">{draft.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -375,11 +599,65 @@ const AdminDashboard = () => {
                             Contact Candidate
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                        <Button variant="outline" size="sm">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Interview Request Details</DialogTitle>
+                              <DialogDescription>
+                                Full details of the interview request from {request.companyName}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-sm font-medium">Candidate Name</Label>
+                                  <p className="text-sm text-gray-700">{request.candidateName}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Company</Label>
+                                  <p className="text-sm text-gray-700">{request.companyName}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Client Email</Label>
+                                  <p className="text-sm text-gray-700">{request.clientEmail}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Project</Label>
+                                  <p className="text-sm text-gray-700">{request.projectName || "Not specified"}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Request Date</Label>
+                                  <p className="text-sm text-gray-700">{new Date(request.requestDate).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Status</Label>
+                                  <Badge variant={request.status === 'pending' ? 'secondary' : 'default'} 
+                                         className={request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                                    {request.status === 'pending' ? 'Pending' : 'Contacted'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">Message</Label>
+                                <div className="bg-gray-50 rounded-lg p-4 mt-2">
+                                  <p className="text-sm text-gray-700">{request.message}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEmailClient(request)}
+                        >
+                          <Mail className="h-4 w-4 mr-1" />
                           Email Client
                         </Button>
                       </div>
