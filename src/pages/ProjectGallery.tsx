@@ -14,7 +14,7 @@ const ProjectGallery = () => {
   const [selectedSkill, setSelectedSkill] = useState("all");
   const [projects, setProjects] = useState<any[]>([]);
 
-  // Load projects from localStorage
+  // Load projects and candidates from localStorage
   useEffect(() => {
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
     setProjects(savedProjects);
@@ -28,11 +28,14 @@ const ProjectGallery = () => {
 
   const filteredProjects = projects.filter(project => {
     const projectTechnologies = project.technologies ? project.technologies.split(',').map((t: string) => t.trim()) : [];
-    const projectCandidates = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()) : [];
+    
+    // Get candidates from new candidate system for search
+    const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    const projectCandidates = savedCandidates.filter((c: any) => c.projectId === project.id);
     
     const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         projectCandidates.some((candidate: string) => candidate.toLowerCase().includes(searchTerm.toLowerCase()));
+                         projectCandidates.some((candidate: any) => candidate.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCohort = selectedCohort === "all" || project.cohort === selectedCohort;
     const matchesSkill = selectedSkill === "all" || projectTechnologies.includes(selectedSkill);
     
@@ -122,7 +125,9 @@ const ProjectGallery = () => {
           ) : (
             filteredProjects.map((project) => {
               const projectTechnologies = project.technologies ? project.technologies.split(',').map((t: string) => t.trim()) : [];
-              const projectCandidates = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()) : [];
+              // Get candidates from new candidate system
+              const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+              const projectCandidates = savedCandidates.filter((c: any) => c.projectId === project.id);
               const defaultImage = "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=240&fit=crop&crop=top";
               
               return (
@@ -187,7 +192,7 @@ const ProjectGallery = () => {
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        Team: {projectCandidates.slice(0, 2).join(", ")}
+                        Team: {projectCandidates.slice(0, 2).map((c: any) => c.name).join(", ")}
                         {projectCandidates.length > 2 && ` +${projectCandidates.length - 2} more`}
                       </div>
                       

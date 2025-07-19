@@ -42,6 +42,26 @@ interface ProjectForm {
   projectUrl: string;
 }
 
+interface Candidate {
+  id: string;
+  name: string;
+  role: string;
+  skills: string;
+  bio: string;
+  photoUrl: string;
+  projectId: string;
+  createdAt: string;
+}
+
+interface CandidateForm {
+  name: string;
+  role: string;
+  skills: string;
+  bio: string;
+  photoUrl: string;
+  projectId: string;
+}
+
 interface Draft extends ProjectForm {
   id: string;
   createdAt: string;
@@ -69,26 +89,37 @@ const AdminDashboard = () => {
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
+  // State for candidates
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [candidateForm, setCandidateForm] = useState<CandidateForm>({
+    name: "",
+    role: "",
+    skills: "",
+    bio: "",
+    photoUrl: "",
+    projectId: ""
+  });
+
   // Get real data from storage
   const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+  const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
   const stats = {
     totalProjects: savedProjects.length,
-    activeCandidates: savedProjects.reduce((count: number, project: any) => {
-      const candidateCount = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()).length : 0;
-      return count + candidateCount;
-    }, 0),
+    activeCandidates: savedCandidates.length,
     completedCohorts: [...new Set(savedProjects.map((p: any) => p.cohort))].length
   };
 
   const recentProjects = savedProjects.slice(-2);
 
-  // Load interview requests, drafts, and projects from storage
+  // Load interview requests, drafts, candidates, and projects from storage
   useEffect(() => {
     setInterviewRequests(getInterviewRequests());
     const savedDrafts = JSON.parse(localStorage.getItem('project-drafts') || '[]');
     setDrafts(savedDrafts);
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
     setProjects(savedProjects);
+    const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    setCandidates(savedCandidates);
   }, [activeTab]);
 
   const handleUploadProject = () => {
@@ -284,6 +315,54 @@ const AdminDashboard = () => {
     setEditingProjectId(null);
   };
 
+  // Candidate management functions
+  const handleAddCandidate = () => {
+    if (!candidateForm.name || !candidateForm.projectId) {
+      toast({
+        title: "Error",
+        description: "Please fill in candidate name and select a project.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newCandidate: Candidate = {
+      ...candidateForm,
+      id: `candidate-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedCandidates = [...candidates, newCandidate];
+    setCandidates(updatedCandidates);
+    localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+
+    // Clear form
+    setCandidateForm({
+      name: "",
+      role: "",
+      skills: "",
+      bio: "",
+      photoUrl: "",
+      projectId: ""
+    });
+
+    toast({
+      title: "Candidate Added",
+      description: "New candidate has been successfully added to the project.",
+    });
+  };
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    const updatedCandidates = candidates.filter(c => c.id !== candidateId);
+    setCandidates(updatedCandidates);
+    localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+    
+    toast({
+      title: "Candidate Deleted",
+      description: "Candidate has been removed.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -319,12 +398,15 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white">
+          <TabsList className="grid w-full grid-cols-6 bg-white">
             <TabsTrigger value="overview" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Overview
             </TabsTrigger>
             <TabsTrigger value="projects" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Projects
+            </TabsTrigger>
+            <TabsTrigger value="candidates" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
+              Candidates
             </TabsTrigger>
             <TabsTrigger value="upload" className="data-[state=active]:bg-capaciti-purple data-[state=active]:text-white">
               Upload New
@@ -467,6 +549,159 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Candidates Tab */}
+          <TabsContent value="candidates" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-capaciti-navy">Add New Candidate</CardTitle>
+                <CardDescription>Add candidate information to a project</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="candidateName">Name *</Label>
+                      <Input 
+                        id="candidateName" 
+                        placeholder="Enter candidate name" 
+                        value={candidateForm.name}
+                        onChange={(e) => setCandidateForm({...candidateForm, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="candidateRole">Role</Label>
+                      <Input 
+                        id="candidateRole" 
+                        placeholder="e.g., Frontend Developer, Data Analyst" 
+                        value={candidateForm.role}
+                        onChange={(e) => setCandidateForm({...candidateForm, role: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="candidateSkills">Skills</Label>
+                      <Input 
+                        id="candidateSkills" 
+                        placeholder="e.g., React, Python, SQL, Design" 
+                        value={candidateForm.skills}
+                        onChange={(e) => setCandidateForm({...candidateForm, skills: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="candidateProject">Project *</Label>
+                      <Select value={candidateForm.projectId} onValueChange={(value) => setCandidateForm({...candidateForm, projectId: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          {projects.map(project => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.projectName} ({project.groupName})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="candidatePhoto">Photo URL</Label>
+                      <Input 
+                        id="candidatePhoto" 
+                        placeholder="https://example.com/photo.jpg" 
+                        type="url"
+                        value={candidateForm.photoUrl}
+                        onChange={(e) => setCandidateForm({...candidateForm, photoUrl: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="candidateBio">Short Bio</Label>
+                  <Textarea 
+                    id="candidateBio" 
+                    placeholder="Brief description about the candidate..."
+                    className="min-h-[100px]"
+                    value={candidateForm.bio}
+                    onChange={(e) => setCandidateForm({...candidateForm, bio: e.target.value})}
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    className="bg-capaciti-purple hover:bg-capaciti-purple/90"
+                    onClick={handleAddCandidate}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Candidate
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-capaciti-navy">All Candidates</CardTitle>
+                <CardDescription>Manage candidate profiles</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {candidates.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No candidates added yet</p>
+                    </div>
+                  ) : (
+                    candidates.map((candidate) => {
+                      const project = projects.find(p => p.id === candidate.projectId);
+                      return (
+                        <div key={candidate.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                              {candidate.photoUrl ? (
+                                <img 
+                                  src={candidate.photoUrl} 
+                                  alt={candidate.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <User className="h-6 w-6 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-capaciti-navy">{candidate.name}</h3>
+                              <p className="text-sm text-gray-600">{candidate.role || "No role specified"}</p>
+                              <p className="text-sm text-gray-500">
+                                Project: {project?.projectName || "Unknown"} • Added: {new Date(candidate.createdAt).toLocaleDateString()}
+                              </p>
+                              {candidate.skills && (
+                                <p className="text-xs text-gray-500">Skills: {candidate.skills}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteCandidate(candidate.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </CardContent>

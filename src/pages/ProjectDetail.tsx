@@ -18,9 +18,13 @@ const ProjectDetail = () => {
   // Load project data from localStorage based on ID
   useEffect(() => {
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    const savedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
     const foundProject = savedProjects.find((p: any) => p.id === id);
     
     if (foundProject) {
+      // Get candidates for this specific project
+      const projectCandidates = savedCandidates.filter((c: any) => c.projectId === foundProject.id);
+      
       // Transform the stored project data to match the expected format
       const transformedProject = {
         id: foundProject.id,
@@ -38,13 +42,14 @@ const ProjectDetail = () => {
           "Modern technology implementation",
           "Industry-standard practices"
         ],
-        candidates: foundProject.candidates ? foundProject.candidates.split('\n').filter((c: string) => c.trim()).map((name: string, index: number) => ({
-          id: index + 1,
-          name: name.trim(),
-          role: "Developer",
-          bio: "Passionate developer working on innovative solutions.",
-          image: `https://images.unsplash.com/photo-${1494790108755 + index}?w=150&h=150&fit=crop&crop=face`
-        })) : [],
+        candidates: projectCandidates.map((candidate: any) => ({
+          id: candidate.id,
+          name: candidate.name,
+          role: candidate.role || "Developer",
+          bio: candidate.bio || "Passionate developer working on innovative solutions.",
+          image: candidate.photoUrl || `https://images.unsplash.com/photo-1494790108755-2616f13a7e5f?w=150&h=150&fit=crop&crop=face`,
+          skills: candidate.skills ? candidate.skills.split(',').map((s: string) => s.trim()) : []
+        })),
         category: foundProject.category || "Development",
         demoUrl: foundProject.projectUrl || "#",
         githubUrl: "#"
