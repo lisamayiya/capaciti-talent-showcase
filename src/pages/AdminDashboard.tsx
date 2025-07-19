@@ -64,35 +64,31 @@ const AdminDashboard = () => {
     projectUrl: ""
   });
 
-  // Mock data
+  // State for projects and editing
+  const [projects, setProjects] = useState<any[]>([]);
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+
+  // Get real data from storage
+  const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
   const stats = {
-    totalProjects: 12,
-    activeCandidates: 48,
-    completedCohorts: 2
+    totalProjects: savedProjects.length,
+    activeCandidates: savedProjects.reduce((count: number, project: any) => {
+      const candidateCount = project.candidates ? project.candidates.split('\n').filter((c: string) => c.trim()).length : 0;
+      return count + candidateCount;
+    }, 0),
+    completedCohorts: [...new Set(savedProjects.map((p: any) => p.cohort))].length
   };
 
-  const recentProjects = [
-    {
-      id: 1,
-      name: "EcoTracker Mobile App",
-      groupName: "Green Warriors",
-      cohort: "Cohort 2024-1",
-      views: 145
-    },
-    {
-      id: 2,
-      name: "SmartFinance Dashboard",
-      groupName: "DataMinds",
-      cohort: "Cohort 2024-1", 
-      views: 98
-    }
-  ];
+  const recentProjects = savedProjects.slice(-2);
 
-  // Load interview requests and drafts from storage
+  // Load interview requests, drafts, and projects from storage
   useEffect(() => {
     setInterviewRequests(getInterviewRequests());
     const savedDrafts = JSON.parse(localStorage.getItem('project-drafts') || '[]');
     setDrafts(savedDrafts);
+    const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    setProjects(savedProjects);
   }, [activeTab]);
 
   const handleUploadProject = () => {
@@ -209,6 +205,85 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleViewProject = (projectId: string) => {
+    // Navigate to project detail page or open in new tab
+    window.open(`/project/${projectId}`, '_blank');
+  };
+
+  const handleEditProject = (project: any) => {
+    setProjectForm({
+      projectName: project.projectName,
+      groupName: project.groupName,
+      cohort: project.cohort,
+      category: project.category || "",
+      technologies: project.technologies || "",
+      candidates: project.candidates || "",
+      description: project.description || "",
+      projectUrl: project.projectUrl || ""
+    });
+    setEditingProjectId(project.id);
+    setIsEditingProject(true);
+    setActiveTab("upload");
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    localStorage.setItem('projects', JSON.stringify(updatedProjects));
+    
+    toast({
+      title: "Project Deleted",
+      description: "Project has been removed from the gallery.",
+    });
+  };
+
+  const handleUpdateProject = () => {
+    if (!editingProjectId) return;
+    
+    const updatedProjects = projects.map(p => 
+      p.id === editingProjectId 
+        ? { ...p, ...projectForm, updatedAt: new Date().toISOString() }
+        : p
+    );
+    
+    setProjects(updatedProjects);
+    localStorage.setItem('projects', JSON.stringify(updatedProjects));
+    
+    // Clear form and editing state
+    setProjectForm({
+      projectName: "",
+      groupName: "",
+      cohort: "",
+      category: "",
+      technologies: "",
+      candidates: "",
+      description: "",
+      projectUrl: ""
+    });
+    setIsEditingProject(false);
+    setEditingProjectId(null);
+    
+    toast({
+      title: "Project Updated",
+      description: "Project has been successfully updated.",
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setProjectForm({
+      projectName: "",
+      groupName: "",
+      cohort: "",
+      category: "",
+      technologies: "",
+      candidates: "",
+      description: "",
+      projectUrl: ""
+    });
+    setIsEditingProject(false);
+    setEditingProjectId(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -307,19 +382,29 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentProjects.map((project) => (
-                      <div key={project.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-capaciti-navy">{project.name}</p>
-                          <p className="text-sm text-gray-600">{project.groupName} • {project.cohort}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            {project.views} views
-                          </Badge>
-                        </div>
+                    {recentProjects.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>No projects uploaded yet</p>
                       </div>
-                    ))}
+                    ) : (
+                      recentProjects.map((project) => (
+                        <div 
+                          key={project.id} 
+                          className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                          onClick={() => handleViewProject(project.id)}
+                        >
+                          <div>
+                            <p className="font-medium text-capaciti-navy">{project.projectName}</p>
+                            <p className="text-sm text-gray-600">{project.groupName} • {project.cohort}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              Active
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -335,31 +420,54 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentProjects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-medium text-capaciti-navy">{project.name}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600">{project.groupName} • {project.cohort}</p>
-                        <p className="text-sm text-gray-500">{project.views} views</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
+                  {projects.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No projects uploaded yet</p>
                     </div>
-                  ))}
+                  ) : (
+                    projects.map((project) => (
+                      <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-medium text-capaciti-navy">{project.projectName}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600">{project.groupName} • {project.cohort}</p>
+                          <p className="text-sm text-gray-500">Created: {new Date(project.createdAt).toLocaleDateString()}</p>
+                          {project.projectUrl && (
+                            <p className="text-sm text-blue-600">URL: {project.projectUrl}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewProject(project.id)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditProject(project)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteProject(project.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -369,8 +477,12 @@ const AdminDashboard = () => {
           <TabsContent value="upload" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-capaciti-navy">Upload New Project</CardTitle>
-                <CardDescription>Add a new group project to the platform</CardDescription>
+                <CardTitle className="text-capaciti-navy">
+                  {isEditingProject ? "Edit Project" : "Upload New Project"}
+                </CardTitle>
+                <CardDescription>
+                  {isEditingProject ? "Update project information" : "Add a new group project to the platform"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -469,16 +581,23 @@ const AdminDashboard = () => {
                 <Separator />
 
                 <div className="flex justify-end space-x-4">
-                  <Button variant="outline" onClick={handleSaveAsDraft}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save as Draft
-                  </Button>
+                  {isEditingProject && (
+                    <Button variant="outline" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
+                  )}
+                  {!isEditingProject && (
+                    <Button variant="outline" onClick={handleSaveAsDraft}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save as Draft
+                    </Button>
+                  )}
                   <Button 
                     className="bg-capaciti-purple hover:bg-capaciti-purple/90"
-                    onClick={handleUploadProject}
+                    onClick={isEditingProject ? handleUpdateProject : handleUploadProject}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Project
+                    {isEditingProject ? "Update Project" : "Upload Project"}
                   </Button>
                 </div>
               </CardContent>
