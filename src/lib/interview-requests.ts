@@ -19,35 +19,7 @@ export const getInterviewRequests = (): InterviewRequest[] => {
   
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) {
-    // Initialize with mock data if no requests exist
-    const mockRequests: InterviewRequest[] = [
-      {
-        id: 'mock-1',
-        candidateName: "Sarah Johnson",
-        clientName: "John Doe",
-        clientEmail: "john.doe@techcorp.com",
-        companyName: "TechCorp Solutions",
-        phoneNumber: "+27 11 123 4567",
-        projectName: "EcoTracker Mobile App",
-        requestDate: "2024-01-15",
-        status: "pending",
-        message: "Impressed with Sarah's frontend development skills. Would like to discuss potential React Developer position."
-      },
-      {
-        id: 'mock-2',
-        candidateName: "Michael Chen",
-        clientName: "Jane Smith",
-        clientEmail: "hiring@dataflow.com",
-        companyName: "DataFlow Inc",
-        phoneNumber: "+27 21 987 6543",
-        projectName: "SmartFinance Dashboard",
-        requestDate: "2024-01-14",
-        status: "contacted",
-        message: "Michael's work on the dashboard backend is excellent. Interested in discussing backend engineer role."
-      }
-    ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockRequests));
-    return mockRequests;
+    return []; // Return empty array - no mock data
   }
   
   return JSON.parse(stored);
