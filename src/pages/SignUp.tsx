@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const SignUp = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,8 +24,37 @@ const SignUp = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Sign up form submitted:", formData);
+    
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error", 
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Show success message
+    toast({
+      title: "Account created successfully!",
+      description: "You can now log in to your account",
+    });
+
+    // Navigate to candidate login
+    setTimeout(() => {
+      navigate("/candidate-login");
+    }, 1000);
   };
 
   return (
