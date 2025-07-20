@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { AuthError } from "@supabase/supabase-js";
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "client" | "candidate">("candidate");
+  const [role, setRole] = useState<"admin" | "client" | "candidate">(() => {
+    const roleParam = searchParams.get("role");
+    return (roleParam as "admin" | "client" | "candidate") || "candidate";
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();

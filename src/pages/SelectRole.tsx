@@ -5,15 +5,15 @@ const SelectRole = () => {
   const navigate = useNavigate();
 
   const handleAdminClick = () => {
-    navigate("/admin-login");
+    navigate("/auth?role=admin");
   };
 
   const handleClientClick = () => {
-    navigate("/projects");
+    navigate("/auth?role=client");
   };
 
   const handleCandidateClick = () => {
-    navigate("/candidate-login");
+    navigate("/auth?role=candidate");
   };
 
   return (

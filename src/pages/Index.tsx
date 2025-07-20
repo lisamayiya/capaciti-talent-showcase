@@ -41,10 +41,10 @@ const Index = () => {
             />
           </div>
           <nav className="flex items-center space-x-6">
-            <Link to="/auth" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <Link to="/select-role" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               Login
             </Link>
-            <Link to="/auth" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
+            <Link to="/select-role" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
               Get Started
             </Link>
           </nav>
