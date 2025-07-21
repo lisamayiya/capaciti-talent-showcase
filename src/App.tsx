@@ -15,6 +15,7 @@ import ProjectDetail from "./pages/ProjectDetail";
 import CandidateProfile from "./pages/CandidateProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
+import ClientDashboard from "./pages/ClientDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/candidate/:id" element={<CandidateProfile />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/candidate-dashboard" element={<CandidateDashboard />} />
+          <Route path="/client-dashboard" element={<ClientDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
