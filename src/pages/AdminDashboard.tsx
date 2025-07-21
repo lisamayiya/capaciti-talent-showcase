@@ -40,6 +40,19 @@ interface CandidateSubmission {
   liveDemoLink: string;
   status: "pending" | "approved" | "rejected";
   submittedAt: string;
+  groupName?: string; // Team name like "Team Phoenix"
+}
+
+interface TeamProject {
+  projectTitle: string;
+  projectDescription: string;
+  groupName: string;
+  technologies: string[];
+  githubLink: string;
+  liveDemoLink: string;
+  teamMembers: CandidateSubmission[];
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
 }
 
 const AdminDashboard = () => {
@@ -50,13 +63,44 @@ const AdminDashboard = () => {
   const [submissions, setSubmissions] = useState<CandidateSubmission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<CandidateSubmission | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
+  const [teamProjects, setTeamProjects] = useState<TeamProject[]>([]);
 
-  // Get real data from storage
+  // Group submissions by project and team
+  const groupSubmissionsByTeam = (submissions: CandidateSubmission[]): TeamProject[] => {
+    const grouped = submissions.reduce((acc, submission) => {
+      const key = `${submission.projectTitle}_${submission.groupName || 'Individual'}`;
+      if (!acc[key]) {
+        acc[key] = {
+          projectTitle: submission.projectTitle,
+          projectDescription: submission.projectDescription,
+          groupName: submission.groupName || 'Individual',
+          technologies: submission.technologies.split(',').map(t => t.trim()),
+          githubLink: submission.githubLink,
+          liveDemoLink: submission.liveDemoLink,
+          teamMembers: [],
+          status: "pending" as const,
+          submittedAt: submission.submittedAt
+        };
+      }
+      acc[key].teamMembers.push(submission);
+      // Set team status based on member statuses
+      if (acc[key].teamMembers.every(m => m.status === "approved")) {
+        acc[key].status = "approved";
+      } else if (acc[key].teamMembers.some(m => m.status === "rejected")) {
+        acc[key].status = "rejected";
+      }
+      return acc;
+    }, {} as Record<string, TeamProject>);
+    
+    return Object.values(grouped);
+  };
+
+  const groupedTeamProjects = groupSubmissionsByTeam(submissions);
   const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
   const stats = {
     totalProjects: savedProjects.length,
-    pendingSubmissions: submissions.filter(s => s.status === "pending").length,
-    approvedSubmissions: submissions.filter(s => s.status === "approved").length
+    pendingSubmissions: groupedTeamProjects.filter(s => s.status === "pending").length,
+    approvedSubmissions: groupedTeamProjects.filter(s => s.status === "approved").length
   };
 
   const recentProjects = savedProjects.slice(-2);
@@ -83,62 +127,70 @@ const AdminDashboard = () => {
       }
     }
     setSubmissions(allSubmissions);
+    setTeamProjects(groupSubmissionsByTeam(allSubmissions));
   }, [activeTab]);
 
-  const handleApproveSubmission = (submissionId: string) => {
-    const submission = submissions.find(s => s.id === submissionId);
-    if (!submission) return;
+  const handleApproveTeamProject = (teamProject: TeamProject) => {
+    // Approve all team members
+    const updatedSubmissions = submissions.map(submission => {
+      const isTeamMember = teamProject.teamMembers.some(member => member.id === submission.id);
+      return isTeamMember ? { ...submission, status: "approved" as const } : submission;
+    });
 
-    const updatedSubmission = { ...submission, status: "approved" as const };
-    localStorage.setItem(`candidateSubmission_${submissionId}`, JSON.stringify(updatedSubmission));
+    // Update localStorage for each team member
+    teamProject.teamMembers.forEach(member => {
+      const updatedMember = { ...member, status: "approved" as const };
+      localStorage.setItem(`candidateSubmission_${member.id}`, JSON.stringify(updatedMember));
+    });
     
-    // Also save to projects for client visibility
+    // Save team project for client visibility
     const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
     const newProject = {
-      id: `project_${submissionId}`,
-      projectName: submission.projectTitle,
-      groupName: submission.name,
-      cohort: "Candidate Submission",
-      category: "Individual",
-      technologies: submission.technologies,
-      candidates: submission.name,
-      description: submission.projectDescription,
-      projectUrl: submission.liveDemoLink,
-      githubLink: submission.githubLink,
-      photoUrl: submission.photoUrl,
-      candidateData: submission,
+      id: `team_project_${Date.now()}`,
+      projectName: teamProject.projectTitle,
+      groupName: teamProject.groupName,
+      cohort: "Team Submission",
+      category: "Team",
+      technologies: teamProject.technologies.join(', '),
+      description: teamProject.projectDescription,
+      projectUrl: teamProject.liveDemoLink,
+      githubLink: teamProject.githubLink,
+      teamMembers: teamProject.teamMembers,
       createdAt: new Date().toISOString()
     };
     savedProjects.push(newProject);
     localStorage.setItem('projects', JSON.stringify(savedProjects));
 
-    setSubmissions(prev => prev.map(s => 
-      s.id === submissionId ? updatedSubmission : s
-    ));
+    setSubmissions(updatedSubmissions);
 
     toast({
-      title: "Submission Approved",
-      description: "The submission has been approved and is now visible to clients.",
+      title: "Team Project Approved",
+      description: "The team project has been approved and is now visible to clients.",
     });
   };
 
-  const handleRejectSubmission = (submissionId: string) => {
-    const submission = submissions.find(s => s.id === submissionId);
-    if (!submission) return;
+  const handleRejectTeamProject = (teamProject: TeamProject) => {
+    // Reject all team members
+    const updatedSubmissions = submissions.map(submission => {
+      const isTeamMember = teamProject.teamMembers.some(member => member.id === submission.id);
+      return isTeamMember ? { ...submission, status: "rejected" as const } : submission;
+    });
 
-    const updatedSubmission = { ...submission, status: "rejected" as const };
-    localStorage.setItem(`candidateSubmission_${submissionId}`, JSON.stringify(updatedSubmission));
+    // Update localStorage for each team member
+    teamProject.teamMembers.forEach(member => {
+      const updatedMember = { ...member, status: "rejected" as const };
+      localStorage.setItem(`candidateSubmission_${member.id}`, JSON.stringify(updatedMember));
+    });
 
-    setSubmissions(prev => prev.map(s => 
-      s.id === submissionId ? updatedSubmission : s
-    ));
+    setSubmissions(updatedSubmissions);
 
     toast({
-      title: "Submission Rejected",
-      description: "The submission has been rejected.",
+      title: "Team Project Rejected",
+      description: "The team project has been rejected.",
       variant: "destructive"
     });
   };
+
 
   const handleContactCandidate = (requestId: string) => {
     updateInterviewRequestStatus(requestId, 'contacted');
@@ -355,192 +407,146 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Review Submissions Tab */}
+          {/* Review Team Submissions Tab */}
           <TabsContent value="submissions" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-capaciti-navy">Candidate Submissions</CardTitle>
-                <CardDescription>Review and approve candidate project submissions</CardDescription>
+                <CardTitle className="text-capaciti-navy">Team Project Submissions</CardTitle>
+                <CardDescription>Review and approve team project submissions grouped by cohort</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {submissions.length === 0 ? (
+                <div className="space-y-6">
+                  {groupedTeamProjects.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No submissions yet</p>
+                      <p>No team submissions yet</p>
                     </div>
                   ) : (
-                    submissions.map((submission) => (
-                      <div key={submission.id} className="border rounded-lg p-4 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="font-medium text-capaciti-navy">{submission.name}</h3>
-                              <Badge 
-                                variant={
-                                  submission.status === "approved" ? "default" : 
-                                  submission.status === "rejected" ? "destructive" : "secondary"
-                                }
-                                className={
-                                  submission.status === "approved" ? "bg-green-100 text-green-800" :
-                                  submission.status === "rejected" ? "bg-red-100 text-red-800" :
-                                  "bg-yellow-100 text-yellow-800"
-                                }
-                              >
-                                {submission.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
-                                {submission.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
-                                {submission.status === "rejected" && <ThumbsDown className="h-3 w-3 mr-1" />}
-                                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">{submission.role}</p>
-                            <p className="text-sm font-medium text-capaciti-navy mb-2">{submission.projectTitle}</p>
-                            <p className="text-sm text-gray-500">
-                              Technologies: {submission.technologies || "Not specified"}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setSelectedSubmission(submission)}
+                    groupedTeamProjects.map((teamProject, index) => (
+                      <Card key={index} className="border-l-4 border-l-capaciti-purple">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <h3 className="text-xl font-semibold text-capaciti-navy">🧠 {teamProject.projectTitle}</h3>
+                                <Badge 
+                                  variant={
+                                    teamProject.status === "approved" ? "default" : 
+                                    teamProject.status === "rejected" ? "destructive" : "secondary"
+                                  }
+                                  className={
+                                    teamProject.status === "approved" ? "bg-green-100 text-green-800" :
+                                    teamProject.status === "rejected" ? "bg-red-100 text-red-800" :
+                                    "bg-yellow-100 text-yellow-800"
+                                  }
                                 >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  View Details
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>Submission Details</DialogTitle>
-                                  <DialogDescription>
-                                    Review candidate information and project details
-                                  </DialogDescription>
-                                </DialogHeader>
-                                {selectedSubmission && (
-                                  <div className="space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                      <div className="space-y-4">
-                                        <div>
-                                          <h4 className="font-medium text-capaciti-navy mb-2">Candidate Information</h4>
-                                          <div className="space-y-2">
-                                            <p><strong>Name:</strong> {selectedSubmission.name}</p>
-                                            <p><strong>Role:</strong> {selectedSubmission.role}</p>
-                                            <p><strong>Skills:</strong> {selectedSubmission.skills}</p>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <h4 className="font-medium text-capaciti-navy mb-2">Bio</h4>
-                                          <p className="text-sm text-gray-600">{selectedSubmission.bio || "No bio provided"}</p>
-                                        </div>
-                                      </div>
-                                      <div className="space-y-4">
-                                        <div>
-                                          <h4 className="font-medium text-capaciti-navy mb-2">Project Information</h4>
-                                          <div className="space-y-2">
-                                            <p><strong>Title:</strong> {selectedSubmission.projectTitle}</p>
-                                            <p><strong>Technologies:</strong> {selectedSubmission.technologies}</p>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <h4 className="font-medium text-capaciti-navy mb-2">Description</h4>
-                                          <p className="text-sm text-gray-600">{selectedSubmission.projectDescription || "No description provided"}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {selectedSubmission.photoUrl && (
-                                      <div>
-                                        <h4 className="font-medium text-capaciti-navy mb-2">Photo</h4>
-                                        <img 
-                                          src={selectedSubmission.photoUrl} 
-                                          alt={selectedSubmission.name}
-                                          className="w-32 h-32 rounded-lg object-cover"
-                                        />
-                                      </div>
-                                    )}
-                                    
-                                    <div className="flex flex-wrap gap-4">
-                                      {selectedSubmission.githubLink && (
-                                        <a 
-                                          href={selectedSubmission.githubLink} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="flex items-center text-blue-600 hover:text-blue-800"
-                                        >
-                                          <Github className="h-4 w-4 mr-1" />
-                                          GitHub Repository
-                                        </a>
-                                      )}
-                                      {selectedSubmission.liveDemoLink && (
-                                        <a 
-                                          href={selectedSubmission.liveDemoLink} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="flex items-center text-blue-600 hover:text-blue-800"
-                                        >
-                                          <ExternalLink className="h-4 w-4 mr-1" />
-                                          Live Demo
-                                        </a>
-                                      )}
-                                    </div>
-                                    
-                                    {selectedSubmission.status === "pending" && (
-                                      <div className="flex space-x-4 pt-4 border-t">
-                                        <Button 
-                                          className="bg-green-600 hover:bg-green-700 text-white"
-                                          onClick={() => {
-                                            handleApproveSubmission(selectedSubmission.id);
-                                            setSelectedSubmission(null);
-                                          }}
-                                        >
-                                          <ThumbsUp className="h-4 w-4 mr-2" />
-                                          Approve
-                                        </Button>
-                                        <Button 
-                                          variant="destructive"
-                                          onClick={() => {
-                                            handleRejectSubmission(selectedSubmission.id);
-                                            setSelectedSubmission(null);
-                                          }}
-                                        >
-                                          <ThumbsDown className="h-4 w-4 mr-2" />
-                                          Reject
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
+                                  {teamProject.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                                  {teamProject.status === "approved" && <CheckCircle className="h-3 w-3 mr-1" />}
+                                  {teamProject.status === "rejected" && <ThumbsDown className="h-3 w-3 mr-1" />}
+                                  {teamProject.status.charAt(0).toUpperCase() + teamProject.status.slice(1)}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <Users className="h-4 w-4 text-capaciti-purple" />
+                                <span className="font-medium text-capaciti-purple">🧑‍🤝‍🧑 {teamProject.groupName}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-3">{teamProject.projectDescription}</p>
+                              
+                              {/* Technologies */}
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {teamProject.technologies.map((tech, techIndex) => (
+                                  <Badge key={techIndex} variant="outline" className="text-xs">
+                                    {tech}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              {/* Project Links */}
+                              <div className="flex gap-2 mb-4">
+                                {teamProject.liveDemoLink && (
+                                  <Button variant="outline" size="sm" asChild>
+                                    <a href={teamProject.liveDemoLink} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-3 w-3 mr-1" />
+                                      Demo
+                                    </a>
+                                  </Button>
                                 )}
-                              </DialogContent>
-                            </Dialog>
+                                {teamProject.githubLink && (
+                                  <Button variant="outline" size="sm" asChild>
+                                    <a href={teamProject.githubLink} target="_blank" rel="noopener noreferrer">
+                                      <Github className="h-3 w-3 mr-1" />
+                                      Source
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                             
-                            {submission.status === "pending" && (
-                              <>
+                            {/* Action Buttons */}
+                            {teamProject.status === "pending" && (
+                              <div className="flex flex-col gap-2">
                                 <Button 
                                   size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => handleApproveSubmission(submission.id)}
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleApproveTeamProject(teamProject)}
                                 >
                                   <ThumbsUp className="h-4 w-4 mr-1" />
-                                  Approve
+                                  Approve Team
                                 </Button>
                                 <Button 
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => handleRejectSubmission(submission.id)}
+                                  onClick={() => handleRejectTeamProject(teamProject)}
                                 >
                                   <ThumbsDown className="h-4 w-4 mr-1" />
-                                  Reject
+                                  Reject Team
                                 </Button>
-                              </>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      </div>
+                        </CardHeader>
+                        
+                        <CardContent>
+                          {/* Team Members */}
+                          <div>
+                            <h4 className="font-semibold text-capaciti-navy mb-3 flex items-center gap-2">
+                              👥 Team Members ({teamProject.teamMembers.length})
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {teamProject.teamMembers.map((member) => (
+                                <Card key={member.id} className="hover:shadow-md transition-shadow">
+                                  <CardContent className="pt-4">
+                                    <div className="text-center mb-3">
+                                      <img
+                                        src={member.photoUrl || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=150&h=150&fit=crop&crop=face"}
+                                        alt={member.name}
+                                        className="w-12 h-12 rounded-full mx-auto mb-2 object-cover border-2 border-border"
+                                        onError={(e) => {
+                                          e.currentTarget.src = "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=150&h=150&fit=crop&crop=face";
+                                        }}
+                                      />
+                                      <h5 className="font-medium text-sm">{member.name}</h5>
+                                      <p className="text-xs text-capaciti-purple font-medium">{member.role}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mb-2 text-center leading-relaxed">
+                                      {member.bio}
+                                    </p>
+                                    {member.skills && (
+                                      <div className="flex flex-wrap gap-1 justify-center">
+                                        {member.skills.split(',').slice(0, 3).map((skill, skillIndex) => (
+                                          <Badge key={skillIndex} variant="secondary" className="text-xs">
+                                            {skill.trim()}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))
                   )}
                 </div>
